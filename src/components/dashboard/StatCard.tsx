@@ -81,7 +81,12 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
       </svg>
       {/* Center percentage */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[10px] font-bold text-muted-foreground">
+        <span className={cn(
+          "text-[10px] font-bold",
+          variant === "profit" && "text-profit",
+          variant === "loss" && "text-loss",
+          variant === "default" && "text-primary"
+        )}>
           {Math.round(clampedProgress)}%
         </span>
       </div>
