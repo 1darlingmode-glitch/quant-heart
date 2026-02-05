@@ -7,9 +7,10 @@ import { MarketBreakdown } from "@/components/dashboard/MarketBreakdown";
 import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
 import {
   DollarSign,
-  TrendingUp,
   Target,
-  BarChart3,
+  Calendar,
+  Scale,
+  Flame,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTrades } from "@/hooks/useTrades";
@@ -69,42 +70,51 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <StatCard
           title="Total P/L"
           value={formatCurrency(stats.totalPnl)}
-          changeLabel="vs last month"
+          changeLabel={`${stats.totalTrades} total trades`}
           icon={DollarSign}
           variant={stats.totalPnl >= 0 ? "profit" : "loss"}
           delay={0}
-          progress={Math.min(Math.abs(stats.monthlyChange || 0), 100)}
+          progress={stats.totalPnl !== 0 ? Math.min((Math.abs(stats.totalPnl) / Math.max(Math.abs(stats.bestTrade), Math.abs(stats.worstTrade), 1)) * 10, 100) : 0}
         />
         <StatCard
-          title="Today's P/L"
-          value={formatCurrency(stats.todayPnl)}
-          changeLabel="vs yesterday"
-          icon={TrendingUp}
-          variant={stats.todayPnl >= 0 ? "profit" : "loss"}
-          delay={0.1}
-          progress={Math.min(Math.abs(stats.dailyChange || 0) + 50, 100)}
-        />
-        <StatCard
-          title="Win Rate"
-          value={`${stats.winRate.toFixed(0)}%`}
-          changeLabel={`${stats.totalTrades} trades`}
+          title="Trade Win Rate"
+          value={`${stats.winRate.toFixed(1)}%`}
+          changeLabel={`${stats.winningTrades}W / ${stats.losingTrades}L`}
           icon={Target}
-          delay={0.15}
+          delay={0.1}
           progress={stats.winRate}
           variant={stats.winRate >= 50 ? "profit" : "loss"}
         />
         <StatCard
-          title="Avg Risk/Reward"
-          value={`1:${stats.avgRiskReward.toFixed(1)}`}
-          changeLabel="target: 1:2"
-          icon={BarChart3}
+          title="Day Win Rate"
+          value={`${stats.dayWinRate.toFixed(1)}%`}
+          changeLabel="winning days"
+          icon={Calendar}
+          delay={0.15}
+          progress={stats.dayWinRate}
+          variant={stats.dayWinRate >= 50 ? "profit" : "loss"}
+        />
+        <StatCard
+          title="Avg Win/Loss"
+          value={`${formatCurrency(stats.avgWin)} / ${formatCurrency(stats.avgLoss * -1)}`}
+          changeLabel={`R:R 1:${stats.avgRiskReward.toFixed(1)}`}
+          icon={Scale}
           delay={0.2}
-          progress={Math.min((stats.avgRiskReward / 3) * 100, 100)}
-          variant={stats.avgRiskReward >= 2 ? "profit" : "default"}
+          progress={stats.avgRiskReward > 0 ? Math.min((stats.avgRiskReward / 3) * 100, 100) : 0}
+          variant={stats.avgWin > stats.avgLoss ? "profit" : "loss"}
+        />
+        <StatCard
+          title="Current Streak"
+          value={`${stats.currentStreak} ${stats.streakType === "win" ? "Wins" : stats.streakType === "loss" ? "Losses" : "-"}`}
+          changeLabel={stats.streakType === "win" ? "🔥 Keep it going!" : stats.streakType === "loss" ? "Time to reset" : "No streak"}
+          icon={Flame}
+          delay={0.25}
+          progress={Math.min(stats.currentStreak * 20, 100)}
+          variant={stats.streakType === "win" ? "profit" : stats.streakType === "loss" ? "loss" : "default"}
         />
       </div>
 
