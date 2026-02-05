@@ -133,6 +133,48 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_evaluations: {
+        Row: {
+          created_at: string
+          id: string
+          is_met: boolean
+          rule_id: string | null
+          trade_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_met?: boolean
+          rule_id?: string | null
+          trade_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_met?: boolean
+          rule_id?: string | null
+          trade_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_evaluations_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "trading_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_evaluations_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           created_at: string
@@ -144,6 +186,7 @@ export type Database = {
           market: string
           notes: string | null
           pnl: number | null
+          reliability_score: number | null
           size: number
           status: string
           strategy: string | null
@@ -162,6 +205,7 @@ export type Database = {
           market?: string
           notes?: string | null
           pnl?: number | null
+          reliability_score?: number | null
           size: number
           status?: string
           strategy?: string | null
@@ -180,6 +224,7 @@ export type Database = {
           market?: string
           notes?: string | null
           pnl?: number | null
+          reliability_score?: number | null
           size?: number
           status?: string
           strategy?: string | null
@@ -187,6 +232,42 @@ export type Database = {
           trade_type?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      trading_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+          user_id: string
+          weight_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+          user_id: string
+          weight_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weight_percentage?: number
         }
         Relationships: []
       }
