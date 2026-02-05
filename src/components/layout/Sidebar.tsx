@@ -19,7 +19,7 @@ import { useSidebarState } from "@/hooks/useSidebarState";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: BookOpen, label: "Journal", path: "/journal" },
-  { icon: ClipboardCheck, label: "Checklist", path: "/checklist" },
+  { icon: ClipboardCheck, label: "My Strategy", path: "/checklist" },
   { icon: BarChart3, label: "Analytics", path: "/analytics" },
   { icon: Wallet, label: "Accounts", path: "/accounts" },
   { icon: Bell, label: "Alerts", path: "/alerts" },
