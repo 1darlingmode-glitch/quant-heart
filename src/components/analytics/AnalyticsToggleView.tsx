@@ -16,7 +16,16 @@ import {
 } from "recharts";
 import { useTrades } from "@/hooks/useTrades";
 import { getDay, getHours, startOfWeek, format, differenceInMinutes } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { cn } from "@/lib/utils";
+import { Globe, ChevronDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AnalyticsField = "dayOfWeek" | "hoursOfDay" | "weeks" | "months" | "duration" | "instruments";
 
@@ -24,6 +33,28 @@ interface FieldOption {
   id: AnalyticsField;
   label: string;
 }
+
+interface TimezoneOption {
+  value: string;
+  label: string;
+  abbr: string;
+}
+
+const TIMEZONE_OPTIONS: TimezoneOption[] = [
+  { value: "America/New_York", label: "Eastern Time", abbr: "ET" },
+  { value: "America/Chicago", label: "Central Time", abbr: "CT" },
+  { value: "America/Denver", label: "Mountain Time", abbr: "MT" },
+  { value: "America/Los_Angeles", label: "Pacific Time", abbr: "PT" },
+  { value: "UTC", label: "Coordinated Universal Time", abbr: "UTC" },
+  { value: "Europe/London", label: "London", abbr: "GMT/BST" },
+  { value: "Europe/Paris", label: "Central European", abbr: "CET" },
+  { value: "Europe/Berlin", label: "Berlin", abbr: "CET" },
+  { value: "Asia/Tokyo", label: "Japan", abbr: "JST" },
+  { value: "Asia/Hong_Kong", label: "Hong Kong", abbr: "HKT" },
+  { value: "Asia/Singapore", label: "Singapore", abbr: "SGT" },
+  { value: "Asia/Dubai", label: "Dubai", abbr: "GST" },
+  { value: "Australia/Sydney", label: "Sydney", abbr: "AEST" },
+];
 
 const FIELD_OPTIONS: FieldOption[] = [
   { id: "dayOfWeek", label: "Day of Week" },
@@ -49,6 +80,7 @@ const DISTRIBUTION_COLORS = [
 
 export function AnalyticsToggleView() {
   const [activeField, setActiveField] = useState<AnalyticsField>("dayOfWeek");
+  const [selectedTimezone, setSelectedTimezone] = useState("America/New_York");
   const { trades } = useTrades();
 
   const closedTrades = trades.filter((t) => t.status === "closed" && t.pnl !== null);
@@ -105,7 +137,9 @@ export function AnalyticsToggleView() {
 
     for (const trade of closedTrades) {
       if (!trade.exit_date) continue;
-      const hour = getHours(new Date(trade.exit_date));
+      // Convert to selected timezone
+      const zonedDate = toZonedTime(new Date(trade.exit_date), selectedTimezone);
+      const hour = getHours(zonedDate);
       const existing = hourMap.get(hour) || { pnl: 0, count: 0 };
       existing.pnl += trade.pnl || 0;
       existing.count += 1;
@@ -267,22 +301,46 @@ export function AnalyticsToggleView() {
       transition={{ duration: 0.5 }}
       className="bg-card rounded-xl border border-border p-6 shadow-card"
     >
-      {/* Toggle Buttons */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {FIELD_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => setActiveField(option.id)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
-              activeField === option.id
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+      {/* Header with Toggle Buttons and Timezone Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-wrap gap-2">
+          {FIELD_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setActiveField(option.id)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
+                activeField === option.id
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Timezone Selector */}
+        <div className="flex items-center gap-2">
+          <Globe className="w-4 h-4 text-muted-foreground" />
+          <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
+            <SelectTrigger className="w-[180px] bg-secondary/50 border-border">
+              <SelectValue>
+                {TIMEZONE_OPTIONS.find((tz) => tz.value === selectedTimezone)?.abbr || "Select TZ"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border z-50">
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <SelectItem key={tz.value} value={tz.value} className="cursor-pointer">
+                  <span className="flex items-center gap-2">
+                    <span className="font-medium text-xs text-muted-foreground w-12">{tz.abbr}</span>
+                    <span>{tz.label}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Charts Container */}
