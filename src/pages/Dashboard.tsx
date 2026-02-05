@@ -73,36 +73,38 @@ export default function Dashboard() {
         <StatCard
           title="Total P/L"
           value={formatCurrency(stats.totalPnl)}
-          change={stats.monthlyChange}
           changeLabel="vs last month"
           icon={DollarSign}
           variant={stats.totalPnl >= 0 ? "profit" : "loss"}
           delay={0}
+          progress={Math.min(Math.abs(stats.monthlyChange || 0), 100)}
         />
         <StatCard
           title="Today's P/L"
           value={formatCurrency(stats.todayPnl)}
-          change={stats.dailyChange}
           changeLabel="vs yesterday"
           icon={TrendingUp}
           variant={stats.todayPnl >= 0 ? "profit" : "loss"}
           delay={0.1}
+          progress={Math.min(Math.abs(stats.dailyChange || 0) + 50, 100)}
         />
         <StatCard
           title="Win Rate"
           value={`${stats.winRate.toFixed(0)}%`}
-          change={stats.winRate > 50 ? stats.winRate - 50 : -(50 - stats.winRate)}
           changeLabel={`${stats.totalTrades} trades`}
           icon={Target}
           delay={0.15}
+          progress={stats.winRate}
+          variant={stats.winRate >= 50 ? "profit" : "loss"}
         />
         <StatCard
           title="Avg Risk/Reward"
           value={`1:${stats.avgRiskReward.toFixed(1)}`}
-          change={stats.avgRiskReward >= 2 ? (stats.avgRiskReward - 2) * 10 : -((2 - stats.avgRiskReward) * 10)}
           changeLabel="target: 1:2"
           icon={BarChart3}
           delay={0.2}
+          progress={Math.min((stats.avgRiskReward / 3) * 100, 100)}
+          variant={stats.avgRiskReward >= 2 ? "profit" : "default"}
         />
       </div>
 
