@@ -144,6 +144,21 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
   const totalProfit = periodData.reduce((sum, p) => sum + (p.pnl > 0 ? p.pnl : 0), 0);
   const totalLoss = periodData.reduce((sum, p) => sum + (p.pnl < 0 ? Math.abs(p.pnl) : 0), 0);
 
+  // Get dynamic date range label based on timeframe
+  const getDateRangeLabel = (): string => {
+    const now = new Date();
+    switch (activeTimeframe) {
+      case "daily":
+        return format(now, "MMMM yyyy");
+      case "weekly":
+        return format(now, "MMMM yyyy");
+      case "monthly":
+        return `${format(subMonths(now, 11), "MMM yyyy")} - ${format(now, "MMM yyyy")}`;
+      case "yearly":
+        return `${format(subYears(now, 4), "yyyy")} - ${format(now, "yyyy")}`;
+    }
+  };
+
   // Get short label for boxes based on timeframe
   const getShortLabel = (label: string, timeframe: TimeframeType): string => {
     switch (timeframe) {
@@ -216,6 +231,11 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
             -${totalLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </span>
         </div>
+      </div>
+
+      {/* Date Range Label */}
+      <div className="mb-3">
+        <p className="text-sm font-medium text-foreground">{getDateRangeLabel()}</p>
       </div>
 
       <TooltipProvider>
