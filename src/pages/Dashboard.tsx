@@ -5,6 +5,7 @@ import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { PerformanceRing } from "@/components/dashboard/PerformanceRing";
 import { MarketBreakdown } from "@/components/dashboard/MarketBreakdown";
 import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
+import { DailyPnLChart } from "@/components/dashboard/DailyPnLChart";
 import {
   DollarSign,
   Target,
@@ -143,12 +144,12 @@ export default function Dashboard() {
 
         {/* Right Column - Stats */}
         <div className="space-y-6">
+          <DailyPnLChart />
           <PerformanceRing 
             winRate={stats.winRate} 
             wins={stats.winningTrades} 
             losses={stats.losingTrades} 
           />
-          <MarketBreakdown data={marketBreakdown} />
 
           {/* Quick Stats Card */}
           <motion.div
