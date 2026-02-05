@@ -11,14 +11,10 @@ import {
   Image,
   MessageSquare,
   Tag,
-  BookOpen,
-  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChecklistTab } from "@/components/checklist/ChecklistTab";
 import { cn } from "@/lib/utils";
 
 const journalEntries = [
@@ -137,7 +133,6 @@ const emotionColors: Record<string, string> = {
 
 export default function Journal() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("journal");
 
   return (
     <AppLayout>
@@ -150,201 +145,173 @@ export default function Journal() {
         <div>
           <h1 className="text-3xl font-bold mb-2">Trade Journal</h1>
           <p className="text-muted-foreground">
-            Document, evaluate, and reflect on your trades
+            Document and reflect on your trades
           </p>
         </div>
-        {activeTab === "journal" && (
-          <Button className="gradient-primary shadow-glow">
-            <Plus className="w-4 h-4 mr-2" />
-            New Entry
-          </Button>
-        )}
+        <Button className="gradient-primary shadow-glow">
+          <Plus className="w-4 h-4 mr-2" />
+          New Entry
+        </Button>
       </motion.div>
 
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-        >
-          <TabsList className="bg-card border border-border">
-            <TabsTrigger value="journal" className="gap-2">
-              <BookOpen className="w-4 h-4" />
-              Journal Entries
-            </TabsTrigger>
-            <TabsTrigger value="checklist" className="gap-2">
-              <ClipboardCheck className="w-4 h-4" />
-              Trade Checklist
-            </TabsTrigger>
-          </TabsList>
-        </motion.div>
+      {/* Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="flex flex-col md:flex-row gap-4 mb-6"
+      >
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by symbol, tag, or note..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-card border-border"
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="bg-card">
+            <Calendar className="w-4 h-4 mr-2" />
+            Date Range
+          </Button>
+          <Button variant="outline" className="bg-card">
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
+          </Button>
+        </div>
+      </motion.div>
 
-        <TabsContent value="journal" className="space-y-6">
-          {/* Filters */}
+      {/* Journal Entries */}
+      <div className="space-y-4">
+        {journalEntries.map((entry, index) => (
           <motion.div
+            key={entry.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex flex-col md:flex-row gap-4"
+            transition={{ delay: 0.15 + index * 0.05 }}
+            whileHover={{ scale: 1.005 }}
+            className="bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all cursor-pointer overflow-hidden"
           >
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by symbol, tag, or note..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-card border-border"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="bg-card">
-                <Calendar className="w-4 h-4 mr-2" />
-                Date Range
-              </Button>
-              <Button variant="outline" className="bg-card">
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
-              </Button>
-            </div>
-          </motion.div>
-
-          {/* Journal Entries */}
-          <div className="space-y-4">
-            {journalEntries.map((entry, index) => (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + index * 0.05 }}
-                whileHover={{ scale: 1.005 }}
-                className="bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all cursor-pointer overflow-hidden"
-              >
-                <div className="p-5">
-                  {/* Header Row */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center",
-                          entry.pnl >= 0 ? "bg-profit/10" : "bg-loss/10"
-                        )}
-                      >
-                        {entry.pnl >= 0 ? (
-                          <ArrowUpRight className="w-6 h-6 text-profit" />
-                        ) : (
-                          <ArrowDownRight className="w-6 h-6 text-loss" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold">{entry.symbol}</h3>
-                          <Badge
-                            variant="outline"
-                            className={cn("text-xs", marketColors[entry.market])}
-                          >
-                            {entry.market}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {entry.type}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {entry.date} at {entry.time}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <p
-                        className={cn(
-                          "text-xl font-bold",
-                          entry.pnl >= 0 ? "text-profit" : "text-loss"
-                        )}
-                      >
-                        {entry.pnl >= 0 ? "+" : ""}${Math.abs(entry.pnl).toLocaleString()}
-                      </p>
-                      <p
-                        className={cn(
-                          "text-sm",
-                          entry.pnl >= 0 ? "text-profit/80" : "text-loss/80"
-                        )}
-                      >
-                        {entry.pnlPercent >= 0 ? "+" : ""}
-                        {entry.pnlPercent.toFixed(2)}%
-                      </p>
-                    </div>
+            <div className="p-5">
+              {/* Header Row */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center",
+                      entry.pnl >= 0 ? "bg-profit/10" : "bg-loss/10"
+                    )}
+                  >
+                    {entry.pnl >= 0 ? (
+                      <ArrowUpRight className="w-6 h-6 text-profit" />
+                    ) : (
+                      <ArrowDownRight className="w-6 h-6 text-loss" />
+                    )}
                   </div>
-
-                  {/* Trade Details */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-secondary/30 rounded-lg mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Entry</p>
-                      <p className="font-medium">${entry.entry.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Exit</p>
-                      <p className="font-medium">${entry.exit.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Size</p>
-                      <p className="font-medium">{entry.size}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Emotion</p>
-                      <Badge className={cn("text-xs", emotionColors[entry.emotion])}>
-                        {entry.emotion}
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold">{entry.symbol}</h3>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-xs", marketColors[entry.market])}
+                      >
+                        {entry.market}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {entry.type}
                       </Badge>
                     </div>
-                  </div>
-
-                  {/* Thesis */}
-                  <div className="mb-4">
-                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
-                      Trade Thesis
+                    <p className="text-sm text-muted-foreground">
+                      {entry.date} at {entry.time}
                     </p>
-                    <p className="text-sm">{entry.thesis}</p>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      {entry.tags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs bg-secondary/50"
-                        >
-                          <Tag className="w-3 h-3 mr-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-4 text-muted-foreground">
-                      {entry.hasScreenshot && (
-                        <div className="flex items-center gap-1 text-xs">
-                          <Image className="w-3.5 h-3.5" />
-                          <span>Screenshot</span>
-                        </div>
-                      )}
-                      {entry.notes > 0 && (
-                        <div className="flex items-center gap-1 text-xs">
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>{entry.notes} notes</span>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </TabsContent>
 
-        <TabsContent value="checklist">
-          <ChecklistTab />
-        </TabsContent>
-      </Tabs>
+                <div className="text-right">
+                  <p
+                    className={cn(
+                      "text-xl font-bold",
+                      entry.pnl >= 0 ? "text-profit" : "text-loss"
+                    )}
+                  >
+                    {entry.pnl >= 0 ? "+" : ""}${Math.abs(entry.pnl).toLocaleString()}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-sm",
+                      entry.pnl >= 0 ? "text-profit/80" : "text-loss/80"
+                    )}
+                  >
+                    {entry.pnlPercent >= 0 ? "+" : ""}
+                    {entry.pnlPercent.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+
+              {/* Trade Details */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-secondary/30 rounded-lg mb-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Entry</p>
+                  <p className="font-medium">${entry.entry.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Exit</p>
+                  <p className="font-medium">${entry.exit.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Size</p>
+                  <p className="font-medium">{entry.size}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Emotion</p>
+                  <Badge className={cn("text-xs", emotionColors[entry.emotion])}>
+                    {entry.emotion}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Thesis */}
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
+                  Trade Thesis
+                </p>
+                <p className="text-sm">{entry.thesis}</p>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="flex items-center gap-2">
+                  {entry.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="text-xs bg-secondary/50"
+                    >
+                      <Tag className="w-3 h-3 mr-1" />
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  {entry.hasScreenshot && (
+                    <div className="flex items-center gap-1 text-xs">
+                      <Image className="w-3.5 h-3.5" />
+                      <span>Screenshot</span>
+                    </div>
+                  )}
+                  {entry.notes > 0 && (
+                    <div className="flex items-center gap-1 text-xs">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>{entry.notes} notes</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
     </AppLayout>
   );
 }
