@@ -121,7 +121,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: "easeOut" }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-xl border border-border p-5 shadow-card hover:shadow-card-hover transition-all duration-300"
+      className="bg-card rounded-xl border border-border p-5 shadow-card hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
     >
       <div className="flex items-start justify-between mb-4">
         <div
@@ -150,7 +150,8 @@ export function StatCard({
       <p className={cn(
         "text-2xl font-bold",
         variant === "profit" && "text-profit",
-        variant === "loss" && "text-loss"
+        variant === "loss" && "text-loss",
+        variant === "default" && "text-foreground"
       )}>
         {value}
       </p>
