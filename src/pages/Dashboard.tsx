@@ -4,6 +4,7 @@ import { EquityChart } from "@/components/dashboard/EquityChart";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { PerformanceRing } from "@/components/dashboard/PerformanceRing";
 import { MarketBreakdown } from "@/components/dashboard/MarketBreakdown";
+import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
 import {
   DollarSign,
   TrendingUp,
@@ -16,7 +17,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
-  const { stats, marketBreakdown, equityCurve, recentTrades, isLoading } = useTrades();
+  const { trades, stats, marketBreakdown, equityCurve, recentTrades, isLoading } = useTrades();
   const { data: profile } = useProfile();
 
   const displayName = profile?.display_name || "Trader";
@@ -109,6 +110,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Charts */}
         <div className="lg:col-span-2 space-y-6">
+          <ProgressTracker trades={trades} />
           <EquityChart data={equityCurve} />
           <RecentTrades trades={recentTrades} />
         </div>
