@@ -11,6 +11,7 @@ import {
   Calendar,
   Scale,
   Flame,
+  TrendingUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTrades } from "@/hooks/useTrades";
@@ -70,7 +71,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
         <StatCard
           title="Total P/L"
           value={formatCurrency(stats.totalPnl)}
@@ -81,6 +82,15 @@ export default function Dashboard() {
           progress={stats.totalPnl !== 0 ? Math.min((Math.abs(stats.totalPnl) / Math.max(Math.abs(stats.bestTrade), Math.abs(stats.worstTrade), 1)) * 10, 100) : 0}
         />
         <StatCard
+          title="Daily P/L"
+          value={formatCurrency(stats.todayPnl)}
+          changeLabel={stats.dailyChange !== 0 ? `${stats.dailyChange >= 0 ? "+" : ""}${stats.dailyChange.toFixed(1)}% vs yesterday` : "No trades yesterday"}
+          icon={TrendingUp}
+          variant={stats.todayPnl >= 0 ? "profit" : "loss"}
+          delay={0.05}
+          progress={stats.todayPnl !== 0 ? Math.min((Math.abs(stats.todayPnl) / Math.max(Math.abs(stats.bestTrade), 1)) * 100, 100) : 0}
+        />
+        <StatCard
           title="Trade Win Rate"
           value={`${stats.winRate.toFixed(1)}%`}
           changeLabel={`${stats.winningTrades}W / ${stats.losingTrades}L`}
@@ -88,6 +98,7 @@ export default function Dashboard() {
           delay={0.1}
           progress={stats.winRate}
           variant={stats.winRate >= 50 ? "profit" : "loss"}
+          useThemeColor
         />
         <StatCard
           title="Day Win Rate"
@@ -97,6 +108,7 @@ export default function Dashboard() {
           delay={0.15}
           progress={stats.dayWinRate}
           variant={stats.dayWinRate >= 50 ? "profit" : "loss"}
+          useThemeColor
         />
         <StatCard
           title="Avg Win/Loss"
@@ -106,6 +118,7 @@ export default function Dashboard() {
           delay={0.2}
           progress={stats.avgRiskReward > 0 ? Math.min((stats.avgRiskReward / 3) * 100, 100) : 0}
           variant={stats.avgWin > stats.avgLoss ? "profit" : "loss"}
+          useThemeColor
         />
         <StatCard
           title="Current Streak"
@@ -115,6 +128,7 @@ export default function Dashboard() {
           delay={0.25}
           progress={Math.min(stats.currentStreak * 20, 100)}
           variant={stats.streakType === "win" ? "profit" : stats.streakType === "loss" ? "loss" : "default"}
+          useThemeColor
         />
       </div>
 

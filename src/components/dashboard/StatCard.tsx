@@ -16,6 +16,8 @@ interface StatCardProps {
   maxValue?: number;
   /** Current raw value for calculating progress */
   rawValue?: number;
+  /** Override value color to use theme-aware foreground instead of variant color */
+  useThemeColor?: boolean;
 }
 
 interface MiniRingProps {
@@ -103,6 +105,7 @@ export function StatCard({
   progress,
   maxValue,
   rawValue,
+  useThemeColor = false,
 }: StatCardProps) {
   // Calculate progress if not directly provided
   let displayProgress = progress;
@@ -149,9 +152,13 @@ export function StatCard({
       <p className="text-sm text-muted-foreground mb-1">{title}</p>
       <p className={cn(
         "text-2xl font-bold",
-        variant === "profit" && "text-profit",
-        variant === "loss" && "text-loss",
-        variant === "default" && "text-foreground"
+        useThemeColor 
+          ? "text-foreground" 
+          : variant === "profit" 
+            ? "text-profit" 
+            : variant === "loss" 
+              ? "text-loss" 
+              : "text-foreground"
       )}>
         {value}
       </p>
