@@ -5,7 +5,7 @@ import { RecentTrades } from "@/components/dashboard/RecentTrades";
 import { PerformanceRing } from "@/components/dashboard/PerformanceRing";
 import { MarketBreakdown } from "@/components/dashboard/MarketBreakdown";
 import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
-import { DailyPnLChart } from "@/components/dashboard/DailyPnLChart";
+import { RuleAnalytics } from "@/components/checklist/RuleAnalytics";
 import {
   DollarSign,
   Target,
@@ -139,12 +139,12 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-6">
           <ProgressTracker trades={trades} />
           <EquityChart data={equityCurve} />
+          <RuleAnalytics />
           <RecentTrades trades={recentTrades} />
         </div>
 
         {/* Right Column - Stats */}
         <div className="space-y-6">
-          <DailyPnLChart />
           <PerformanceRing 
             winRate={stats.winRate} 
             wins={stats.winningTrades} 
