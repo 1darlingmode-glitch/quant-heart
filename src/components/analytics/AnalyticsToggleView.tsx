@@ -100,24 +100,24 @@ export function AnalyticsToggleView() {
 
   const calculateHourData = () => {
     const hourMap = new Map<number, { pnl: number; count: number }>();
-    for (let i = 4; i <= 20; i++) hourMap.set(i, { pnl: 0, count: 0 });
+    // Initialize all 24 hours
+    for (let i = 0; i < 24; i++) hourMap.set(i, { pnl: 0, count: 0 });
 
     for (const trade of closedTrades) {
       if (!trade.exit_date) continue;
       const hour = getHours(new Date(trade.exit_date));
-      if (hour >= 4 && hour <= 20) {
-        const existing = hourMap.get(hour) || { pnl: 0, count: 0 };
-        existing.pnl += trade.pnl || 0;
-        existing.count += 1;
-        hourMap.set(hour, existing);
-      }
+      const existing = hourMap.get(hour) || { pnl: 0, count: 0 };
+      existing.pnl += trade.pnl || 0;
+      existing.count += 1;
+      hourMap.set(hour, existing);
     }
 
     const performance: { name: string; pnl: number }[] = [];
     const distribution: { name: string; value: number }[] = [];
 
-    for (let i = 4; i <= 20; i++) {
-      const hourStr = i < 12 ? `${i}AM` : i === 12 ? "12PM" : `${i - 12}PM`;
+    // Generate labels for all 24 hours
+    for (let i = 0; i < 24; i++) {
+      const hourStr = i === 0 ? "12AM" : i < 12 ? `${i}AM` : i === 12 ? "12PM" : `${i - 12}PM`;
       const data = hourMap.get(i)!;
       performance.push({ name: hourStr, pnl: Math.round(data.pnl * 100) / 100 });
       distribution.push({ name: hourStr, value: data.count });
