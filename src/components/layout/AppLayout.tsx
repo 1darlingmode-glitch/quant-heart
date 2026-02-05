@@ -1,17 +1,24 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { motion } from "framer-motion";
+import { useSidebarState } from "@/hooks/useSidebarState";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { collapsed } = useSidebarState();
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="pl-[260px] transition-all duration-300">
+      <motion.div
+        initial={false}
+        animate={{ paddingLeft: collapsed ? 80 : 260 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
         <Header />
         <motion.main
           initial={{ opacity: 0, y: 20 }}
@@ -21,7 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           {children}
         </motion.main>
-      </div>
+      </motion.div>
     </div>
   );
 }
