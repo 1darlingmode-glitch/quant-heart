@@ -1,9 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, useSpring, useTransform } from "framer-motion";
-import { Check, X, RotateCcw, TrendingUp } from "lucide-react";
+import { Check, X, RotateCcw, TrendingUp, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTradingRules } from "@/hooks/useTradingRules";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 function AnimatedNumber({ value, className }: { value: number; className?: string }) {
@@ -28,7 +32,11 @@ interface TradeEvaluatorProps {
 
 export function TradeEvaluator({ tradeId, onScoreChange }: TradeEvaluatorProps) {
   const { rules, isLoading, totalWeight } = useTradingRules();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [evaluations, setEvaluations] = useState<EvaluationState>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   const score = useMemo(() => {
     if (totalWeight === 0) return 0;
@@ -53,13 +61,55 @@ export function TradeEvaluator({ tradeId, onScoreChange }: TradeEvaluatorProps) 
       ...prev,
       [ruleId]: !prev[ruleId],
     }));
+    setHasSaved(false);
   };
 
   const resetEvaluations = () => {
     setEvaluations({});
+    setHasSaved(false);
+  };
+
+  const saveEvaluations = async () => {
+    if (!user?.id) {
+      toast.error("You must be logged in to save evaluations");
+      return;
+    }
+
+    if (Object.keys(evaluations).length === 0) {
+      toast.error("Please check at least one rule before saving");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Create evaluation records for all rules
+      const evaluationRecords = rules.map((rule) => ({
+        user_id: user.id,
+        rule_id: rule.id,
+        trade_id: tradeId || null,
+        is_met: evaluations[rule.id] || false,
+      }));
+
+      const { error } = await supabase
+        .from("trade_evaluations")
+        .insert(evaluationRecords);
+
+      if (error) throw error;
+
+      // Invalidate analytics query to refresh data
+      queryClient.invalidateQueries({ queryKey: ["rule-analytics"] });
+      
+      setHasSaved(true);
+      toast.success("Evaluation saved successfully!");
+    } catch (error: any) {
+      toast.error("Failed to save evaluation: " + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const checkedCount = Object.values(evaluations).filter(Boolean).length;
+  const hasCheckedRules = checkedCount > 0;
 
   const getScoreColor = () => {
     if (score >= 80) return "text-profit";
@@ -117,10 +167,29 @@ export function TradeEvaluator({ tradeId, onScoreChange }: TradeEvaluatorProps) 
               {checkedCount} of {rules.length} rules met
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={resetEvaluations}>
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={resetEvaluations}>
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+            <Button
+              size="sm"
+              onClick={saveEvaluations}
+              disabled={isSaving || hasSaved || !hasCheckedRules}
+              className={cn(
+                hasSaved && "bg-profit hover:bg-profit"
+              )}
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : hasSaved ? (
+                <Check className="w-4 h-4 mr-2" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              {hasSaved ? "Saved" : "Save Evaluation"}
+            </Button>
+          </div>
         </div>
 
         {/* Circular Progress */}
