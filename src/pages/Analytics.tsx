@@ -1,29 +1,17 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
 import { Calendar, Download, TrendingUp, TrendingDown, Target, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const dailyPnL = [
-  { day: "Mon", pnl: 450 },
-  { day: "Tue", pnl: -120 },
-  { day: "Wed", pnl: 680 },
-  { day: "Thu", pnl: 220 },
-  { day: "Fri", pnl: -350 },
-  { day: "Sat", pnl: 0 },
-  { day: "Sun", pnl: 0 },
-];
+import { useTrades } from "@/hooks/useTrades";
+import { DayOfWeekChart } from "@/components/analytics/DayOfWeekChart";
+import { HourOfDayChart } from "@/components/analytics/HourOfDayChart";
+import { WeeklyChart } from "@/components/analytics/WeeklyChart";
+import { MonthlyChart } from "@/components/analytics/MonthlyChart";
+import { TradeDurationChart } from "@/components/analytics/TradeDurationChart";
+import { TopInstrumentsChart } from "@/components/analytics/TopInstrumentsChart";
+import { format } from "date-fns";
 
 const strategyPerformance = [
   { strategy: "Breakout", winRate: 72, trades: 28, pnl: 3200 },
@@ -35,6 +23,13 @@ const strategyPerformance = [
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
+  const { trades, stats } = useTrades();
+
+  // Calculate best/worst trade dates
+  const closedTrades = trades.filter((t) => t.status === "closed" && t.pnl !== null);
+  const sortedByPnl = [...closedTrades].sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
+  const bestTrade = sortedByPnl[0];
+  const worstTrade = sortedByPnl[sortedByPnl.length - 1];
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -105,11 +100,15 @@ export default function Analytics() {
               <TrendingUp className="w-5 h-5 text-profit" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Best Day</p>
-              <p className="font-bold text-lg text-profit">+$2,450</p>
+              <p className="text-xs text-muted-foreground">Best Trade</p>
+              <p className="font-bold text-lg text-profit">
+                {stats.bestTrade > 0 ? `+$${stats.bestTrade.toLocaleString()}` : "$0"}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Jan 3, 2024</p>
+          <p className="text-xs text-muted-foreground">
+            {bestTrade?.exit_date ? format(new Date(bestTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
+          </p>
         </motion.div>
 
         <motion.div
@@ -123,11 +122,15 @@ export default function Analytics() {
               <TrendingDown className="w-5 h-5 text-loss" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Worst Day</p>
-              <p className="font-bold text-lg text-loss">-$680</p>
+              <p className="text-xs text-muted-foreground">Worst Trade</p>
+              <p className="font-bold text-lg text-loss">
+                {stats.worstTrade < 0 ? `-$${Math.abs(stats.worstTrade).toLocaleString()}` : "$0"}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Dec 28, 2023</p>
+          <p className="text-xs text-muted-foreground">
+            {worstTrade?.exit_date ? format(new Date(worstTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
+          </p>
         </motion.div>
 
         <motion.div
@@ -142,10 +145,10 @@ export default function Analytics() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Avg Win</p>
-              <p className="font-bold text-lg">$324</p>
+              <p className="font-bold text-lg">${Math.round(stats.avgWin).toLocaleString()}</p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">vs $148 avg loss</p>
+          <p className="text-xs text-muted-foreground">vs ${Math.round(stats.avgLoss).toLocaleString()} avg loss</p>
         </motion.div>
 
         <motion.div
@@ -159,67 +162,33 @@ export default function Analytics() {
               <Award className="w-5 h-5 text-chart-3" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Win Streak</p>
-              <p className="font-bold text-lg">8 trades</p>
+              <p className="text-xs text-muted-foreground">Current Streak</p>
+              <p className="font-bold text-lg">
+                {stats.currentStreak} {stats.streakType !== "none" ? stats.streakType : ""}
+              </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Current: 3</p>
+          <p className="text-xs text-muted-foreground">
+            {stats.streakType === "win" ? "Winning streak" : stats.streakType === "loss" ? "Losing streak" : "No streak"}
+          </p>
         </motion.div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Daily P/L */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <h3 className="font-semibold text-lg mb-4">Daily P/L</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyPnL}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  formatter={(value: number) => [`$${value}`, "P/L"]}
-                />
-                <Bar dataKey="pnl" radius={[4, 4, 0, 0]} animationDuration={1200}>
-                  {dailyPnL.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.pnl >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
+      {/* Performance Charts Grid - TradeZella Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <DayOfWeekChart />
+        <HourOfDayChart />
+        <WeeklyChart />
+        <MonthlyChart />
+        <TradeDurationChart />
+        <TopInstrumentsChart />
       </div>
 
       {/* Strategy Performance */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.45 }}
+        transition={{ delay: 0.7 }}
         className="bg-card rounded-xl border border-border p-5 shadow-card"
       >
         <h3 className="font-semibold text-lg mb-4">Strategy Performance</h3>
