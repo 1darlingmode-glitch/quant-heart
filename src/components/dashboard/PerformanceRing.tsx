@@ -32,12 +32,14 @@ export function PerformanceRing({ winRate = 0, wins = 0, losses = 0 }: Performan
               data={hasNoTrades ? [{ name: "No Data", value: 1, color: "hsl(var(--muted))" }] : data}
               cx="50%"
               cy="50%"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={hasNoTrades ? 0 : 2}
+              innerRadius={55}
+              outerRadius={72}
+              paddingAngle={hasNoTrades ? 0 : 1}
               dataKey="value"
               animationDuration={1200}
               animationEasing="ease-out"
+              stroke="hsl(var(--background))"
+              strokeWidth={1}
             >
               {(hasNoTrades ? [{ color: "hsl(var(--muted))" }] : data).map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
