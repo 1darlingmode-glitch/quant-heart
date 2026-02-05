@@ -6,15 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTrades } from "@/hooks/useTrades";
 import { AnalyticsToggleView } from "@/components/analytics/AnalyticsToggleView";
+import { RuleAnalytics } from "@/components/checklist/RuleAnalytics";
 import { format } from "date-fns";
-
-const strategyPerformance = [
-  { strategy: "Breakout", winRate: 72, trades: 28, pnl: 3200 },
-  { strategy: "Mean Reversion", winRate: 65, trades: 22, pnl: 1850 },
-  { strategy: "Trend Following", winRate: 58, trades: 35, pnl: 2100 },
-  { strategy: "Gap Fill", winRate: 78, trades: 15, pnl: 1420 },
-  { strategy: "Scalping", winRate: 54, trades: 45, pnl: -320 },
-];
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -174,54 +167,14 @@ export default function Analytics() {
         <AnalyticsToggleView />
       </div>
 
-      {/* Strategy Performance */}
+      {/* Rule Compliance Analytics */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
-        className="bg-card rounded-xl border border-border p-5 shadow-card"
       >
-        <h3 className="font-semibold text-lg mb-4">Strategy Performance</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Strategy</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Win Rate</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Trades</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Total P/L</th>
-              </tr>
-            </thead>
-            <tbody>
-              {strategyPerformance.map((strategy) => (
-                <tr key={strategy.strategy} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                  <td className="py-3 px-4 font-medium">{strategy.strategy}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full",
-                            strategy.winRate >= 60 ? "bg-profit" : strategy.winRate >= 50 ? "bg-warning" : "bg-loss"
-                          )}
-                          style={{ width: `${strategy.winRate}%` }}
-                        />
-                      </div>
-                      <span className="text-sm">{strategy.winRate}%</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-muted-foreground">{strategy.trades}</td>
-                  <td className={cn(
-                    "py-3 px-4 text-right font-semibold",
-                    strategy.pnl >= 0 ? "text-profit" : "text-loss"
-                  )}>
-                    {strategy.pnl >= 0 ? "+" : ""}${Math.abs(strategy.pnl).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h3 className="font-semibold text-lg mb-4">Rule Compliance Analytics</h3>
+        <RuleAnalytics />
       </motion.div>
     </AppLayout>
   );
