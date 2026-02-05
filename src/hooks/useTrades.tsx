@@ -35,6 +35,11 @@ export interface TradeStats {
   worstTrade: number;
   monthlyChange: number;
   dailyChange: number;
+  dayWinRate: number;
+  avgWin: number;
+  avgLoss: number;
+  currentStreak: number;
+  streakType: "win" | "loss" | "none";
 }
 
 export interface MarketBreakdown {
@@ -149,6 +154,61 @@ function calculateStats(trades: Trade[]): TradeStats {
     ? ((todayPnl - yesterdayPnl) / Math.abs(yesterdayPnl)) * 100 
     : todayPnl > 0 ? 100 : 0;
 
+  // Day Win Rate - calculate based on unique trading days
+  const tradingDays = new Map<string, { wins: number; losses: number }>();
+  for (const trade of closedTrades) {
+    if (trade.exit_date) {
+      const dayKey = format(new Date(trade.exit_date), "yyyy-MM-dd");
+      const existing = tradingDays.get(dayKey) || { wins: 0, losses: 0 };
+      if ((trade.pnl || 0) > 0) {
+        existing.wins++;
+      } else if ((trade.pnl || 0) < 0) {
+        existing.losses++;
+      }
+      tradingDays.set(dayKey, existing);
+    }
+  }
+  
+  let winningDays = 0;
+  let totalDays = 0;
+  tradingDays.forEach((dayStats) => {
+    totalDays++;
+    // A winning day is when net trades are positive
+    if (dayStats.wins > dayStats.losses) {
+      winningDays++;
+    }
+  });
+  const dayWinRate = totalDays > 0 ? (winningDays / totalDays) * 100 : 0;
+
+  // Current Streak - consecutive wins or losses from most recent trade
+  let currentStreak = 0;
+  let streakType: "win" | "loss" | "none" = "none";
+  
+  if (sortedTrades.length > 0) {
+    const lastTrade = sortedTrades[sortedTrades.length - 1];
+    const lastPnl = lastTrade.pnl || 0;
+    
+    if (lastPnl > 0) {
+      streakType = "win";
+      for (let i = sortedTrades.length - 1; i >= 0; i--) {
+        if ((sortedTrades[i].pnl || 0) > 0) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    } else if (lastPnl < 0) {
+      streakType = "loss";
+      for (let i = sortedTrades.length - 1; i >= 0; i--) {
+        if ((sortedTrades[i].pnl || 0) < 0) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
   return {
     totalPnl,
     todayPnl,
@@ -165,6 +225,11 @@ function calculateStats(trades: Trade[]): TradeStats {
     worstTrade,
     monthlyChange,
     dailyChange,
+    dayWinRate,
+    avgWin,
+    avgLoss,
+    currentStreak,
+    streakType,
   };
 }
 
