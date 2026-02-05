@@ -17,9 +17,9 @@ export default function Checklist() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">Trade Checklist</h1>
+        <h1 className="text-3xl font-bold mb-2">My Strategy Checklist</h1>
         <p className="text-muted-foreground">
-          Evaluate trade quality before execution with your personal trading rules
+          Evaluate trade quality before execution with your personal trading strategy
         </p>
       </motion.div>
 
