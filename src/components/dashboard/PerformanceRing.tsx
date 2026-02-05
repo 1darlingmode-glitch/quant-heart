@@ -2,12 +2,12 @@ import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 interface PerformanceRingProps {
-  winRate: number;
-  wins: number;
-  losses: number;
+  winRate?: number;
+  wins?: number;
+  losses?: number;
 }
 
-export function PerformanceRing({ winRate, wins, losses }: PerformanceRingProps) {
+export function PerformanceRing({ winRate = 0, wins = 0, losses = 0 }: PerformanceRingProps) {
   const data = [
     { name: "Wins", value: wins || 1, color: "hsl(var(--profit))" },
     { name: "Losses", value: losses || 1, color: "hsl(var(--loss))" },
