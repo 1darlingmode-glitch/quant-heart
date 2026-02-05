@@ -135,13 +135,10 @@ export function TradeEvaluator({ tradeId, onScoreChange }: TradeEvaluatorProps) 
                 strokeWidth="8"
                 strokeLinecap="round"
                 className={getScoreBgColor()}
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: score / 100 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                style={{
-                  strokeDasharray: "283",
-                  strokeDashoffset: 283 - (283 * score) / 100,
-                }}
+                style={{ strokeDasharray: "283" }}
+                initial={{ strokeDashoffset: 283 }}
+                animate={{ strokeDashoffset: 283 - (283 * score) / 100 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
