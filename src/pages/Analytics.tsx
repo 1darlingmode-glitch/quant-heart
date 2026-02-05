@@ -2,8 +2,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -12,11 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from "recharts";
 import { Calendar, Download, TrendingUp, TrendingDown, Target, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,42 +25,12 @@ const dailyPnL = [
   { day: "Sun", pnl: 0 },
 ];
 
-const hourlyPerformance = [
-  { hour: "6AM", pnl: 120 },
-  { hour: "7AM", pnl: 340 },
-  { hour: "8AM", pnl: 890 },
-  { hour: "9AM", pnl: 1250 },
-  { hour: "10AM", pnl: 780 },
-  { hour: "11AM", pnl: 420 },
-  { hour: "12PM", pnl: 180 },
-  { hour: "1PM", pnl: 350 },
-  { hour: "2PM", pnl: 560 },
-  { hour: "3PM", pnl: 920 },
-  { hour: "4PM", pnl: 340 },
-];
-
 const strategyPerformance = [
   { strategy: "Breakout", winRate: 72, trades: 28, pnl: 3200 },
   { strategy: "Mean Reversion", winRate: 65, trades: 22, pnl: 1850 },
   { strategy: "Trend Following", winRate: 58, trades: 35, pnl: 2100 },
   { strategy: "Gap Fill", winRate: 78, trades: 15, pnl: 1420 },
   { strategy: "Scalping", winRate: 54, trades: 45, pnl: -320 },
-];
-
-const radarData = [
-  { subject: "Win Rate", A: 68, fullMark: 100 },
-  { subject: "Risk Mgmt", A: 85, fullMark: 100 },
-  { subject: "Discipline", A: 72, fullMark: 100 },
-  { subject: "Consistency", A: 78, fullMark: 100 },
-  { subject: "Psychology", A: 65, fullMark: 100 },
-  { subject: "Execution", A: 82, fullMark: 100 },
-];
-
-const heatmapData = [
-  [4, 2, 1, 3, 5, 2, 0],
-  [3, 5, 2, 4, 3, 1, 0],
-  [2, 4, 6, 3, 2, 3, 0],
-  [1, 3, 4, 5, 4, 2, 0],
 ];
 
 export default function Analytics() {
@@ -250,149 +213,57 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
         </motion.div>
-
-        {/* Performance by Hour */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <h3 className="font-semibold text-lg mb-4">Performance by Hour</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={hourlyPerformance}>
-                <defs>
-                  <linearGradient id="hourlyGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis
-                  dataKey="hour"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                  formatter={(value: number) => [`$${value}`, "Avg P/L"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="pnl"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#hourlyGradient)"
-                  animationDuration={1200}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
       </div>
 
-      {/* Strategy Performance & Radar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Strategy Performance */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-          className="lg:col-span-2 bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <h3 className="font-semibold text-lg mb-4">Strategy Performance</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Strategy</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Win Rate</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Trades</th>
-                  <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Total P/L</th>
-                </tr>
-              </thead>
-              <tbody>
-                {strategyPerformance.map((strategy, index) => (
-                  <tr key={strategy.strategy} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                    <td className="py-3 px-4 font-medium">{strategy.strategy}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full",
-                              strategy.winRate >= 60 ? "bg-profit" : strategy.winRate >= 50 ? "bg-warning" : "bg-loss"
-                            )}
-                            style={{ width: `${strategy.winRate}%` }}
-                          />
-                        </div>
-                        <span className="text-sm">{strategy.winRate}%</span>
+      {/* Strategy Performance */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className="bg-card rounded-xl border border-border p-5 shadow-card"
+      >
+        <h3 className="font-semibold text-lg mb-4">Strategy Performance</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Strategy</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Win Rate</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Trades</th>
+                <th className="text-right py-3 px-4 text-sm font-medium text-muted-foreground">Total P/L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {strategyPerformance.map((strategy) => (
+                <tr key={strategy.strategy} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                  <td className="py-3 px-4 font-medium">{strategy.strategy}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-2 bg-secondary rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full",
+                            strategy.winRate >= 60 ? "bg-profit" : strategy.winRate >= 50 ? "bg-warning" : "bg-loss"
+                          )}
+                          style={{ width: `${strategy.winRate}%` }}
+                        />
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-muted-foreground">{strategy.trades}</td>
-                    <td className={cn(
-                      "py-3 px-4 text-right font-semibold",
-                      strategy.pnl >= 0 ? "text-profit" : "text-loss"
-                    )}>
-                      {strategy.pnl >= 0 ? "+" : ""}${Math.abs(strategy.pnl).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-
-        {/* Trading Radar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <h3 className="font-semibold text-lg mb-4">Trading Score</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                />
-                <PolarRadiusAxis
-                  angle={30}
-                  domain={[0, 100]}
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
-                />
-                <Radar
-                  name="Score"
-                  dataKey="A"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.3}
-                  animationDuration={1200}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-center mt-2">
-            <p className="text-2xl font-bold">75</p>
-            <p className="text-sm text-muted-foreground">Overall Score</p>
-          </div>
-        </motion.div>
-      </div>
+                      <span className="text-sm">{strategy.winRate}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-muted-foreground">{strategy.trades}</td>
+                  <td className={cn(
+                    "py-3 px-4 text-right font-semibold",
+                    strategy.pnl >= 0 ? "text-profit" : "text-loss"
+                  )}>
+                    {strategy.pnl >= 0 ? "+" : ""}${Math.abs(strategy.pnl).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </AppLayout>
   );
 }

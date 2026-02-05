@@ -6,6 +6,8 @@ import { PerformanceRing } from "@/components/dashboard/PerformanceRing";
 import { MarketBreakdown } from "@/components/dashboard/MarketBreakdown";
 import { ProgressTracker } from "@/components/dashboard/ProgressTracker";
 import { DailyPnLChart } from "@/components/dashboard/DailyPnLChart";
+import { TradingScore } from "@/components/dashboard/TradingScore";
+import { PerformanceByHour } from "@/components/dashboard/PerformanceByHour";
 import {
   DollarSign,
   Target,
@@ -144,6 +146,8 @@ export default function Dashboard() {
 
         {/* Right Column - Stats */}
         <div className="space-y-6">
+          <TradingScore delay={0.4} />
+          <PerformanceByHour delay={0.45} />
           <DailyPnLChart />
           <PerformanceRing 
             winRate={stats.winRate} 
