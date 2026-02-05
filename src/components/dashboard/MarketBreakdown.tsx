@@ -8,11 +8,11 @@ interface MarketBreakdownData {
 }
 
 interface MarketBreakdownProps {
-  data: MarketBreakdownData[];
+  data?: MarketBreakdownData[];
 }
 
-export function MarketBreakdown({ data }: MarketBreakdownProps) {
-  const hasData = data.length > 0;
+export function MarketBreakdown({ data = [] }: MarketBreakdownProps) {
+  const hasData = data && data.length > 0;
 
   // Default empty state data
   const displayData = hasData
