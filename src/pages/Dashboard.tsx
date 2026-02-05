@@ -9,12 +9,50 @@ import {
   TrendingUp,
   Target,
   BarChart3,
-  Percent,
-  Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTrades } from "@/hooks/useTrades";
+import { useProfile } from "@/hooks/useProfile";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
+  const { stats, marketBreakdown, equityCurve, recentTrades, isLoading } = useTrades();
+  const { data: profile } = useProfile();
+
+  const displayName = profile?.display_name || "Trader";
+
+  const formatCurrency = (value: number) => {
+    const prefix = value >= 0 ? "+" : "";
+    return `${prefix}$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="mb-8">
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-36 rounded-xl" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-[380px] rounded-xl" />
+            <Skeleton className="h-[400px] rounded-xl" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-[280px] rounded-xl" />
+            <Skeleton className="h-[280px] rounded-xl" />
+            <Skeleton className="h-[320px] rounded-xl" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       {/* Welcome Section */}
@@ -23,7 +61,7 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">Welcome back, John</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {displayName}</h1>
         <p className="text-muted-foreground">
           Here's an overview of your trading performance
         </p>
@@ -33,35 +71,35 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total P/L"
-          value="+$15,120"
-          change={12.5}
+          value={formatCurrency(stats.totalPnl)}
+          change={stats.monthlyChange}
           changeLabel="vs last month"
           icon={DollarSign}
-          variant="profit"
+          variant={stats.totalPnl >= 0 ? "profit" : "loss"}
           delay={0}
         />
         <StatCard
           title="Today's P/L"
-          value="+$1,140"
-          change={8.2}
+          value={formatCurrency(stats.todayPnl)}
+          change={stats.dailyChange}
           changeLabel="vs yesterday"
           icon={TrendingUp}
-          variant="profit"
+          variant={stats.todayPnl >= 0 ? "profit" : "loss"}
           delay={0.1}
         />
         <StatCard
           title="Win Rate"
-          value="68%"
-          change={3.1}
-          changeLabel="100 trades"
+          value={`${stats.winRate.toFixed(0)}%`}
+          change={stats.winRate > 50 ? stats.winRate - 50 : -(50 - stats.winRate)}
+          changeLabel={`${stats.totalTrades} trades`}
           icon={Target}
           delay={0.15}
         />
         <StatCard
           title="Avg Risk/Reward"
-          value="1:2.4"
-          change={-0.2}
-          changeLabel="target: 1:3"
+          value={`1:${stats.avgRiskReward.toFixed(1)}`}
+          change={stats.avgRiskReward >= 2 ? (stats.avgRiskReward - 2) * 10 : -((2 - stats.avgRiskReward) * 10)}
+          changeLabel="target: 1:2"
           icon={BarChart3}
           delay={0.2}
         />
@@ -71,14 +109,18 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Charts */}
         <div className="lg:col-span-2 space-y-6">
-          <EquityChart />
-          <RecentTrades />
+          <EquityChart data={equityCurve} />
+          <RecentTrades trades={recentTrades} />
         </div>
 
         {/* Right Column - Stats */}
         <div className="space-y-6">
-          <PerformanceRing />
-          <MarketBreakdown />
+          <PerformanceRing 
+            winRate={stats.winRate} 
+            wins={stats.winningTrades} 
+            losses={stats.losingTrades} 
+          />
+          <MarketBreakdown data={marketBreakdown} />
 
           {/* Quick Stats Card */}
           <motion.div
@@ -91,27 +133,29 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Expectancy</span>
-                <span className="font-semibold text-profit">+$42.50</span>
+                <span className={`font-semibold ${stats.expectancy >= 0 ? "text-profit" : "text-loss"}`}>
+                  {formatCurrency(stats.expectancy)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Max Drawdown</span>
-                <span className="font-semibold text-loss">-8.2%</span>
+                <span className="font-semibold text-loss">-{stats.maxDrawdown.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Profit Factor</span>
-                <span className="font-semibold">2.14</span>
+                <span className="font-semibold">{stats.profitFactor.toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Avg Hold Time</span>
-                <span className="font-semibold">2h 34m</span>
+                <span className="font-semibold">{stats.avgHoldTime}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Best Trade</span>
-                <span className="font-semibold text-profit">+$2,450</span>
+                <span className="font-semibold text-profit">{formatCurrency(stats.bestTrade)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-sm">Worst Trade</span>
-                <span className="font-semibold text-loss">-$680</span>
+                <span className="font-semibold text-loss">{formatCurrency(stats.worstTrade)}</span>
               </div>
             </div>
           </motion.div>

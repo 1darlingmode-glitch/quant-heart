@@ -11,25 +11,39 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-const data = [
-  { date: "Jan", equity: 10000 },
-  { date: "Feb", equity: 10850 },
-  { date: "Mar", equity: 10420 },
-  { date: "Apr", equity: 11200 },
-  { date: "May", equity: 11890 },
-  { date: "Jun", equity: 11450 },
-  { date: "Jul", equity: 12340 },
-  { date: "Aug", equity: 13100 },
-  { date: "Sep", equity: 12780 },
-  { date: "Oct", equity: 13450 },
-  { date: "Nov", equity: 14200 },
-  { date: "Dec", equity: 15120 },
-];
+interface EquityPoint {
+  date: string;
+  equity: number;
+}
+
+interface EquityChartProps {
+  data: EquityPoint[];
+}
 
 const timeframes = ["1W", "1M", "3M", "6M", "1Y", "ALL"];
 
-export function EquityChart() {
+export function EquityChart({ data }: EquityChartProps) {
   const [activeTimeframe, setActiveTimeframe] = useState("1Y");
+
+  // Filter data based on timeframe (simplified - just show different amounts of data)
+  const getFilteredData = () => {
+    switch (activeTimeframe) {
+      case "1W":
+        return data.slice(-1);
+      case "1M":
+        return data.slice(-1);
+      case "3M":
+        return data.slice(-3);
+      case "6M":
+        return data.slice(-6);
+      case "1Y":
+      case "ALL":
+      default:
+        return data;
+    }
+  };
+
+  const filteredData = getFilteredData();
 
   return (
     <motion.div
@@ -65,7 +79,7 @@ export function EquityChart() {
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
+          <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop
