@@ -139,6 +139,28 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
   const totalWins = periodData.filter((p) => p.result === "win").length;
   const totalLosses = periodData.filter((p) => p.result === "loss").length;
   const totalPnl = periodData.reduce((sum, p) => sum + p.pnl, 0);
+  
+  // Calculate total profit and total loss separately
+  const totalProfit = periodData.reduce((sum, p) => sum + (p.pnl > 0 ? p.pnl : 0), 0);
+  const totalLoss = periodData.reduce((sum, p) => sum + (p.pnl < 0 ? Math.abs(p.pnl) : 0), 0);
+
+  // Get short label for boxes based on timeframe
+  const getShortLabel = (label: string, timeframe: TimeframeType): string => {
+    switch (timeframe) {
+      case "daily":
+        // "Jan 5" -> "5"
+        return label.split(" ")[1] || label;
+      case "weekly":
+        // "Week of Jan 5" -> "W1" style, use week number
+        return label.replace("Week of ", "").split(" ")[1] || "";
+      case "monthly":
+        // "Jan 2024" -> "Jan"
+        return label.split(" ")[0].substring(0, 3);
+      case "yearly":
+        // "2024" -> "'24"
+        return "'" + label.slice(-2);
+    }
+  };
 
   return (
     <motion.div
@@ -147,7 +169,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
       transition={{ duration: 0.5, delay: 0.25 }}
       className="bg-card rounded-xl border border-border p-5 shadow-card"
     >
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-lg">Progress Tracker</h3>
           <p className="text-sm text-muted-foreground">
@@ -178,6 +200,24 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
         </div>
       </div>
 
+      {/* Total Profit/Loss Stats */}
+      <div className="flex gap-4 mb-4">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-profit/10 rounded-lg border border-profit/20">
+          <div className="w-2 h-2 rounded-full bg-profit" />
+          <span className="text-xs text-muted-foreground">Total Profit:</span>
+          <span className="text-sm font-semibold text-profit">
+            +${totalProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-loss/10 rounded-lg border border-loss/20">
+          <div className="w-2 h-2 rounded-full bg-loss" />
+          <span className="text-xs text-muted-foreground">Total Loss:</span>
+          <span className="text-sm font-semibold text-loss">
+            -${totalLoss.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+      </div>
+
       <TooltipProvider>
         <div className={cn(
           "grid gap-1.5",
@@ -200,12 +240,18 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
                     damping: 20,
                   }}
                   className={cn(
-                    "aspect-square rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card",
-                    period.result === "win" && "bg-profit hover:ring-profit/50",
-                    period.result === "loss" && "bg-loss hover:ring-loss/50",
-                    period.result === "neutral" && "bg-muted hover:ring-muted-foreground/50"
+                    "aspect-square rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center",
+                    period.result === "win" && "bg-profit shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
+                    period.result === "loss" && "bg-loss shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-loss/50",
+                    period.result === "neutral" && "bg-muted/30 border border-border/40 hover:ring-muted-foreground/50"
                   )}
-                />
+                >
+                  {period.result === "neutral" && (
+                    <span className="text-[9px] font-medium text-muted-foreground/40">
+                      {getShortLabel(period.label, activeTimeframe)}
+                    </span>
+                  )}
+                </motion.div>
               </TooltipTrigger>
               <TooltipContent className="text-center">
                 <p className="font-semibold">{period.label}</p>
@@ -227,15 +273,15 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
       {/* Legend */}
       <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-profit" />
+          <div className="w-3 h-3 rounded-sm bg-profit shadow-sm" />
           <span className="text-xs text-muted-foreground">Winning</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-loss" />
+          <div className="w-3 h-3 rounded-sm bg-loss shadow-sm" />
           <span className="text-xs text-muted-foreground">Losing</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-muted" />
+          <div className="w-3 h-3 rounded-sm bg-muted/30 border border-border/40" />
           <span className="text-xs text-muted-foreground">No trades</span>
         </div>
       </div>
