@@ -1,10 +1,21 @@
 import { useState, useMemo, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useSpring, useTransform } from "framer-motion";
 import { Check, X, RotateCcw, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTradingRules } from "@/hooks/useTradingRules";
 import { cn } from "@/lib/utils";
+
+function AnimatedNumber({ value, className }: { value: number; className?: string }) {
+  const spring = useSpring(value, { stiffness: 100, damping: 20 });
+  const display = useTransform(spring, (current) => Math.round(current));
+
+  useEffect(() => {
+    spring.set(value);
+  }, [spring, value]);
+
+  return <motion.span className={className}>{display}</motion.span>;
+}
 
 interface EvaluationState {
   [ruleId: string]: boolean;
@@ -142,14 +153,9 @@ export function TradeEvaluator({ tradeId, onScoreChange }: TradeEvaluatorProps) 
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <motion.span
-                key={score}
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className={cn("text-3xl font-bold", getScoreColor())}
-              >
-                {score}%
-              </motion.span>
+              <span className={cn("text-3xl font-bold", getScoreColor())}>
+                <AnimatedNumber value={score} />%
+              </span>
             </div>
           </div>
 
