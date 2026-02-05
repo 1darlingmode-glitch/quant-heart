@@ -5,12 +5,7 @@ import { Calendar, Download, TrendingUp, TrendingDown, Target, Award } from "luc
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTrades } from "@/hooks/useTrades";
-import { DayOfWeekChart } from "@/components/analytics/DayOfWeekChart";
-import { HourOfDayChart } from "@/components/analytics/HourOfDayChart";
-import { WeeklyChart } from "@/components/analytics/WeeklyChart";
-import { MonthlyChart } from "@/components/analytics/MonthlyChart";
-import { TradeDurationChart } from "@/components/analytics/TradeDurationChart";
-import { TopInstrumentsChart } from "@/components/analytics/TopInstrumentsChart";
+import { AnalyticsToggleView } from "@/components/analytics/AnalyticsToggleView";
 import { format } from "date-fns";
 
 const strategyPerformance = [
@@ -174,14 +169,9 @@ export default function Analytics() {
         </motion.div>
       </div>
 
-      {/* Performance Charts Grid - TradeZella Style */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <DayOfWeekChart />
-        <HourOfDayChart />
-        <WeeklyChart />
-        <MonthlyChart />
-        <TradeDurationChart />
-        <TopInstrumentsChart />
+      {/* Analytics Toggle View - TradeZella Style */}
+      <div className="mb-8">
+        <AnalyticsToggleView />
       </div>
 
       {/* Strategy Performance */}
