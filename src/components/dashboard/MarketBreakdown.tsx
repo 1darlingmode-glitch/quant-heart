@@ -1,15 +1,28 @@
 import { motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const data = [
-  { market: "Stocks", pnl: 4250, trades: 42 },
-  { market: "Forex", pnl: 1820, trades: 28 },
-  { market: "Crypto", pnl: -650, trades: 15 },
-  { market: "Futures", pnl: 3100, trades: 22 },
-  { market: "Options", pnl: 890, trades: 8 },
-];
+interface MarketBreakdownData {
+  market: string;
+  pnl: number;
+  trades: number;
+}
 
-export function MarketBreakdown() {
+interface MarketBreakdownProps {
+  data: MarketBreakdownData[];
+}
+
+export function MarketBreakdown({ data }: MarketBreakdownProps) {
+  const hasData = data.length > 0;
+
+  // Default empty state data
+  const displayData = hasData
+    ? data
+    : [
+        { market: "Stocks", pnl: 0, trades: 0 },
+        { market: "Forex", pnl: 0, trades: 0 },
+        { market: "Crypto", pnl: 0, trades: 0 },
+      ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -22,43 +35,49 @@ export function MarketBreakdown() {
         <p className="text-sm text-muted-foreground">P/L by market type</p>
       </div>
 
-      <div className="h-[180px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical">
-            <XAxis
-              type="number"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
-            />
-            <YAxis
-              type="category"
-              dataKey="market"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              width={60}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: "8px",
-              }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, "P/L"]}
-            />
-            <Bar dataKey="pnl" radius={[0, 4, 4, 0]} animationDuration={1200}>
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={entry.pnl >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {!hasData ? (
+        <div className="h-[180px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">No trades recorded yet</p>
+        </div>
+      ) : (
+        <div className="h-[180px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={displayData} layout="vertical">
+              <XAxis
+                type="number"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
+              />
+              <YAxis
+                type="category"
+                dataKey="market"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                width={60}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                }}
+                formatter={(value: number) => [`$${value.toLocaleString()}`, "P/L"]}
+              />
+              <Bar dataKey="pnl" radius={[0, 4, 4, 0]} animationDuration={1200}>
+                {displayData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.pnl >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </motion.div>
   );
 }
