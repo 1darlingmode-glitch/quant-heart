@@ -1,9 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Settings } from "lucide-react";
+import { ClipboardCheck, Settings, BarChart3 } from "lucide-react";
 import { RuleManager } from "@/components/checklist/RuleManager";
 import { TradeEvaluator } from "@/components/checklist/TradeEvaluator";
+import { RuleAnalytics } from "@/components/checklist/RuleAnalytics";
 import { useState } from "react";
 
 export default function Checklist() {
@@ -35,6 +36,10 @@ export default function Checklist() {
               <ClipboardCheck className="w-4 h-4" />
               Evaluate Trade
             </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="manage" className="gap-2">
               <Settings className="w-4 h-4" />
               Manage Rules
@@ -43,6 +48,10 @@ export default function Checklist() {
 
           <TabsContent value="evaluate" className="mt-6">
             <TradeEvaluator />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-6">
+            <RuleAnalytics />
           </TabsContent>
 
           <TabsContent value="manage" className="mt-6">
