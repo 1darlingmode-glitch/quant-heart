@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PeriodDetailModal } from "./PeriodDetailModal";
 
 interface ProgressTrackerProps {
   trades?: Trade[];
@@ -40,6 +41,8 @@ interface PeriodData {
   losses: number;
   pnl: number;
   result: "win" | "loss" | "neutral";
+  start: Date;
+  end: Date;
 }
 
 const timeframes: { label: string; value: TimeframeType }[] = [
@@ -127,13 +130,15 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
       losses,
       pnl,
       result,
+      start: period.start,
+      end: period.end,
     };
   });
 }
 
 export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
   const [activeTimeframe, setActiveTimeframe] = useState<TimeframeType>("daily");
-
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodData | null>(null);
   const periodData = getPeriodData(trades, activeTimeframe);
 
   const totalWins = periodData.filter((p) => p.result === "win").length;
@@ -259,6 +264,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
                     stiffness: 400,
                     damping: 20,
                   }}
+                  onClick={() => setSelectedPeriod(period)}
                   className={cn(
                     "aspect-square rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center",
                     period.result === "win" && "bg-profit shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
@@ -305,6 +311,18 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
           <span className="text-xs text-muted-foreground">No trades</span>
         </div>
       </div>
+
+      {/* Period Detail Modal */}
+      {selectedPeriod && (
+        <PeriodDetailModal
+          isOpen={!!selectedPeriod}
+          onClose={() => setSelectedPeriod(null)}
+          periodLabel={selectedPeriod.label}
+          periodStart={selectedPeriod.start}
+          periodEnd={selectedPeriod.end}
+          trades={trades}
+        />
+      )}
     </motion.div>
   );
 }
