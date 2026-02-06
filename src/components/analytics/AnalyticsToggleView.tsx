@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type AnalyticsField = "dayOfWeek" | "hoursOfDay" | "weeks" | "months" | "duration" | "instruments";
+type AnalyticsField = "dayOfWeek" | "hoursOfDay" | "weeks" | "sessions" | "months" | "duration" | "instruments";
 
 interface FieldOption {
   id: AnalyticsField;
@@ -85,6 +85,7 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: "dayOfWeek", label: "Day of Week" },
   { id: "hoursOfDay", label: "Hours of Day" },
   { id: "weeks", label: "Weeks" },
+  { id: "sessions", label: "Sessions" },
   { id: "months", label: "Months" },
   { id: "duration", label: "Intraday Duration" },
   { id: "instruments", label: "Top 5 Instruments" },
@@ -153,6 +154,8 @@ export function AnalyticsToggleView() {
         return calculateHourData();
       case "weeks":
         return calculateWeeklyData();
+      case "sessions":
+        return calculateSessionData();
       case "months":
         return calculateMonthlyData();
       case "duration":
@@ -249,6 +252,62 @@ export function AnalyticsToggleView() {
     const distribution = Array.from(weekMap.entries()).map(([name, data]) => ({
       name,
       value: data.count,
+    }));
+
+    return { performance, distribution };
+  };
+
+  const calculateSessionData = () => {
+    const sessionMap = new Map<string, { pnl: number; count: number; color: string }>();
+    
+    // Initialize sessions
+    for (const session of TRADING_SESSIONS) {
+      sessionMap.set(session.name, { pnl: 0, count: 0, color: session.color });
+    }
+    sessionMap.set("Off-Hours", { pnl: 0, count: 0, color: "hsl(var(--muted-foreground))" });
+
+    for (const trade of closedTrades) {
+      if (!trade.exit_date) continue;
+      
+      // Get UTC hour of the trade
+      const exitDate = new Date(trade.exit_date);
+      const utcHour = exitDate.getUTCHours();
+      
+      // Determine which session this trade belongs to
+      let assignedSession = "Off-Hours";
+      for (const session of TRADING_SESSIONS) {
+        if (session.utcStart <= session.utcEnd) {
+          // Normal range
+          if (utcHour >= session.utcStart && utcHour < session.utcEnd) {
+            assignedSession = session.name;
+            break;
+          }
+        } else {
+          // Crosses midnight
+          if (utcHour >= session.utcStart || utcHour < session.utcEnd) {
+            assignedSession = session.name;
+            break;
+          }
+        }
+      }
+      
+      const existing = sessionMap.get(assignedSession)!;
+      existing.pnl += trade.pnl || 0;
+      existing.count += 1;
+    }
+
+    const sessionOrder = ["Asian", "London", "New York", "Off-Hours"];
+    
+    const performance = sessionOrder.map((name) => ({
+      name,
+      pnl: Math.round((sessionMap.get(name)?.pnl || 0) * 100) / 100,
+      color: sessionMap.get(name)?.color || "hsl(var(--muted-foreground))",
+    }));
+
+    const distribution = sessionOrder.map((name) => ({
+      name,
+      value: sessionMap.get(name)?.count || 0,
+      color: sessionMap.get(name)?.color || "hsl(var(--muted-foreground))",
     }));
 
     return { performance, distribution };
