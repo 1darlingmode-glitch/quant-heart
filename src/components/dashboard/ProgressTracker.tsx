@@ -246,7 +246,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
       <TooltipProvider>
         <div className={cn(
           "grid gap-2",
-          activeTimeframe === "daily" && "grid-cols-10",
+          activeTimeframe === "daily" && "grid-cols-6",
           activeTimeframe === "weekly" && "grid-cols-6",
           activeTimeframe === "monthly" && "grid-cols-6",
           activeTimeframe === "yearly" && "grid-cols-5"
@@ -269,7 +269,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
                     "aspect-square rounded-md cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center min-h-[28px] border",
                     period.result === "win" && "bg-profit border-profit/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
                     period.result === "loss" && "bg-loss border-loss/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-loss/50",
-                    period.result === "neutral" && "bg-muted/50 border-border hover:ring-muted-foreground/50"
+                    period.result === "neutral" && "bg-muted border-muted-foreground/30 hover:ring-muted-foreground/50"
                   )}
                 >
                   {period.result === "neutral" && (
@@ -307,7 +307,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
           <span className="text-xs text-muted-foreground">Losing</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-muted/50 border border-border" />
+          <div className="w-3 h-3 rounded-sm bg-muted border border-muted-foreground/30" />
           <span className="text-xs text-muted-foreground">No trades</span>
         </div>
       </div>
