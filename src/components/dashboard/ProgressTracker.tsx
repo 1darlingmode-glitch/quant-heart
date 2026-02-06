@@ -266,7 +266,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
                   }}
                   onClick={() => setSelectedPeriod(period)}
                   className={cn(
-                    "aspect-square rounded-md cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center min-h-[28px] border",
+                    "aspect-square rounded-md cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center min-h-[24px] border",
                     period.result === "win" && "bg-profit border-profit/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
                     period.result === "loss" && "bg-loss border-loss/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-loss/50",
                     period.result === "neutral" && "bg-muted border-muted-foreground/30 hover:ring-muted-foreground/50"
