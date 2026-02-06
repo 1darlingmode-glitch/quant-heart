@@ -250,7 +250,7 @@ export function Header() {
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          className="text-muted-foreground hover:text-foreground hover:bg-accent"
+          className="text-muted-foreground hover:text-foreground hover:bg-muted"
         >
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </Button>
@@ -261,7 +261,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="relative text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -353,7 +353,7 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-accent">
+            <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-muted">
               <Avatar className="w-9 h-9 border-2 border-primary/20">
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
                   {displayName.substring(0, 2).toUpperCase()}
