@@ -85,9 +85,9 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: "dayOfWeek", label: "Day of Week" },
   { id: "hoursOfDay", label: "Hours of Day" },
   { id: "weeks", label: "Weeks" },
-  { id: "sessions", label: "Sessions" },
   { id: "months", label: "Months" },
   { id: "duration", label: "Intraday Duration" },
+  { id: "sessions", label: "Sessions" },
   { id: "instruments", label: "Top 5 Instruments" },
 ];
 
@@ -443,7 +443,7 @@ export function AnalyticsToggleView() {
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-muted-foreground" />
           <Select value={selectedTimezone} onValueChange={setSelectedTimezone}>
-            <SelectTrigger className="w-[180px] bg-secondary/50 border-border">
+            <SelectTrigger className="w-[120px] h-8 text-xs bg-secondary/50 border-border">
               <SelectValue>
                 {TIMEZONE_OPTIONS.find((tz) => tz.value === selectedTimezone)?.abbr || "Select TZ"}
               </SelectValue>
