@@ -16,10 +16,6 @@ import {
   eachWeekOfInterval,
   eachMonthOfInterval,
   format,
-  subDays,
-  subWeeks,
-  subMonths,
-  subYears,
 } from "date-fns";
 import {
   Tooltip,
@@ -56,13 +52,23 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
   const closedTrades = trades.filter((t) => t.status === "closed" && t.pnl !== null && t.exit_date);
   const now = new Date();
   
+  // Find the earliest trade date to start tracking from
+  const allTradeDates = trades
+    .filter((t) => t.entry_date)
+    .map((t) => new Date(t.entry_date));
+  
+  const earliestTradeDate = allTradeDates.length > 0 
+    ? new Date(Math.min(...allTradeDates.map(d => d.getTime())))
+    : now;
+  
   let periods: { start: Date; end: Date; label: string }[] = [];
   
   switch (timeframe) {
     case "daily": {
-      // Last 30 days (30 boxes total)
-      const startDate = subDays(now, 29);
+      // Start from the user's first trade, max 30 days shown
+      const startDate = startOfDay(earliestTradeDate);
       const days = eachDayOfInterval({ start: startDate, end: now });
+      // Take the last 30 days if there are more
       periods = days.slice(-30).map((day) => ({
         start: startOfDay(day),
         end: endOfDay(day),
@@ -71,10 +77,10 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
       break;
     }
     case "weekly": {
-      // Last 12 weeks
-      const startDate = subWeeks(now, 11);
+      // Start from user's first trade week, max 12 weeks shown
+      const startDate = startOfWeek(earliestTradeDate, { weekStartsOn: 1 });
       const weeks = eachWeekOfInterval({ start: startDate, end: now }, { weekStartsOn: 1 });
-      periods = weeks.map((week) => ({
+      periods = weeks.slice(-12).map((week) => ({
         start: startOfWeek(week, { weekStartsOn: 1 }),
         end: endOfWeek(week, { weekStartsOn: 1 }),
         label: `Week of ${format(week, "MMM d")}`,
@@ -82,10 +88,10 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
       break;
     }
     case "monthly": {
-      // Last 12 months
-      const startDate = subMonths(now, 11);
+      // Start from user's first trade month, max 12 months shown
+      const startDate = startOfMonth(earliestTradeDate);
       const months = eachMonthOfInterval({ start: startDate, end: now });
-      periods = months.map((month) => ({
+      periods = months.slice(-12).map((month) => ({
         start: startOfMonth(month),
         end: endOfMonth(month),
         label: format(month, "MMM yyyy"),
@@ -93,17 +99,21 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
       break;
     }
     case "yearly": {
-      // Last 5 years
+      // Start from user's first trade year, max 5 years shown
       const years: { start: Date; end: Date; label: string }[] = [];
-      for (let i = 4; i >= 0; i--) {
-        const year = subYears(now, i);
+      const startYear = earliestTradeDate.getFullYear();
+      const endYear = now.getFullYear();
+      
+      for (let year = startYear; year <= endYear; year++) {
+        const yearDate = new Date(year, 0, 1);
         years.push({
-          start: startOfYear(year),
-          end: endOfYear(year),
-          label: format(year, "yyyy"),
+          start: startOfYear(yearDate),
+          end: endOfYear(yearDate),
+          label: format(yearDate, "yyyy"),
         });
       }
-      periods = years;
+      // Take the last 5 years if there are more
+      periods = years.slice(-5);
       break;
     }
   }
@@ -149,18 +159,21 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
   const totalProfit = periodData.reduce((sum, p) => sum + (p.pnl > 0 ? p.pnl : 0), 0);
   const totalLoss = periodData.reduce((sum, p) => sum + (p.pnl < 0 ? Math.abs(p.pnl) : 0), 0);
 
-  // Get dynamic date range label based on timeframe
+  // Get dynamic date range label based on actual period data
   const getDateRangeLabel = (): string => {
-    const now = new Date();
+    if (periodData.length === 0) return "";
+    const firstPeriod = periodData[0];
+    const lastPeriod = periodData[periodData.length - 1];
+    
     switch (activeTimeframe) {
       case "daily":
-        return format(now, "MMMM yyyy");
+        return `${format(firstPeriod.start, "MMM d")} - ${format(lastPeriod.end, "MMM d, yyyy")}`;
       case "weekly":
-        return format(now, "MMMM yyyy");
+        return `${format(firstPeriod.start, "MMM d")} - ${format(lastPeriod.end, "MMM d, yyyy")}`;
       case "monthly":
-        return `${format(subMonths(now, 11), "MMM yyyy")} - ${format(now, "MMM yyyy")}`;
+        return `${format(firstPeriod.start, "MMM yyyy")} - ${format(lastPeriod.end, "MMM yyyy")}`;
       case "yearly":
-        return `${format(subYears(now, 4), "yyyy")} - ${format(now, "yyyy")}`;
+        return `${format(firstPeriod.start, "yyyy")} - ${format(lastPeriod.end, "yyyy")}`;
     }
   };
 
