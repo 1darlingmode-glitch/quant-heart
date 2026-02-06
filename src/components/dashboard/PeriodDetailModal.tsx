@@ -21,11 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   LineChart,
   Line,
   XAxis,
@@ -43,12 +38,12 @@ import {
   X,
   Clock,
   TrendingUp,
+  TrendingDown,
+  Target,
   DollarSign,
   Upload,
   Save,
   Loader2,
-  StickyNote,
-  Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -87,8 +82,6 @@ export function PeriodDetailModal({
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [screenshotsOpen, setScreenshotsOpen] = useState(false);
 
   // Load existing record if available
   useEffect(() => {
@@ -232,8 +225,6 @@ export function PeriodDetailModal({
         gross_profit: grossProfit,
         gross_loss: grossLoss,
       });
-      setNotesOpen(false);
-      setScreenshotsOpen(false);
       onClose();
     } catch (error) {
       console.error("Save error:", error);
@@ -248,235 +239,170 @@ export function PeriodDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-start justify-between gap-4">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex flex-col gap-1">
-            <span className="text-lg">{periodLabel}</span>
-            <span className="text-xs font-normal text-muted-foreground flex items-center gap-1.5">
-              <Clock className="h-3 w-3" />
-              {format(currentTime, "EEE, MMM d • HH:mm:ss")}
+            <span className="text-xl">{periodLabel}</span>
+            <span className="text-sm font-normal text-muted-foreground flex items-center gap-2">
+              <Clock className="h-3.5 w-3.5" />
+              {format(currentTime, "EEEE, MMMM d, yyyy • HH:mm:ss")}
             </span>
           </DialogTitle>
-          <div className="flex items-center gap-1 mr-6">
-            {/* Notes Popover */}
-            <Popover open={notesOpen} onOpenChange={setNotesOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 relative",
-                    notes && "text-primary"
-                  )}
-                >
-                  <StickyNote className="h-4 w-4" />
-                  {notes && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full" />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" align="end">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Notes</Label>
-                  <div className="flex gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFormat("bold")}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Bold className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFormat("italic")}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Italic className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFormat("list")}
-                      className="h-7 w-7 p-0"
-                    >
-                      <List className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <Textarea
-                    id="period-notes"
-                    placeholder="Add notes..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="min-h-[80px] resize-none text-sm"
-                  />
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Screenshots Popover */}
-            <Popover open={screenshotsOpen} onOpenChange={setScreenshotsOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 relative",
-                    screenshots.length > 0 && "text-primary"
-                  )}
-                >
-                  <Camera className="h-4 w-4" />
-                  {screenshots.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] bg-primary rounded-full text-[9px] text-primary-foreground flex items-center justify-center">
-                      {screenshots.length}
-                    </span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72" align="end">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Screenshots</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {screenshots.map((url, index) => (
-                      <div
-                        key={index}
-                        className="relative group w-16 h-16 rounded border border-border overflow-hidden"
-                      >
-                        <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => removeScreenshot(index)}
-                          className="absolute top-0.5 right-0.5 bg-background/80 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-                    ))}
-                    <label className="w-16 h-16 rounded border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
-                      <Upload className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground mt-0.5">Upload</span>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleScreenshotUpload}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                    </label>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
         </DialogHeader>
 
-        <div className="space-y-4 mt-3">
-          {/* P/L Chart - Single compact chart */}
-          <div className="bg-secondary/30 rounded-lg p-3 border border-border">
-            <h4 className="text-xs font-medium mb-2 flex items-center gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5 text-primary" />
-              Cumulative P/L
-            </h4>
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={120}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="trade"
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={{ stroke: "hsl(var(--border))" }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-                    axisLine={{ stroke: "hsl(var(--border))" }}
-                    tickFormatter={(v) => `$${v}`}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "11px",
-                    }}
-                    labelFormatter={(label) => `Trade ${label}`}
-                    formatter={(value: number) => [formatCurrency(value), "P/L"]}
-                  />
-                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                  <Line
-                    type="monotone"
-                    dataKey="cumulative"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))", r: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[120px] flex items-center justify-center text-muted-foreground text-xs">
-                No trades in this period
-              </div>
-            )}
+        <div className="space-y-6 mt-4">
+          {/* P/L Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Cumulative P/L Chart */}
+            <div className="bg-secondary/30 rounded-lg p-4 border border-border">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Cumulative P/L
+              </h4>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="trade"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={{ stroke: "hsl(var(--border))" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={{ stroke: "hsl(var(--border))" }}
+                      tickFormatter={(v) => `$${v}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      labelFormatter={(label) => `Trade ${label}`}
+                      formatter={(value: number) => [formatCurrency(value), "P/L"]}
+                    />
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                    <Line
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--primary))", r: 3 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+                  No trades in this period
+                </div>
+              )}
+            </div>
+
+            {/* Individual Trade P/L Chart */}
+            <div className="bg-secondary/30 rounded-lg p-4 border border-border">
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Trade P/L
+              </h4>
+              {chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="time"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={{ stroke: "hsl(var(--border))" }}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={{ stroke: "hsl(var(--border))" }}
+                      tickFormatter={(v) => `$${v}`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      formatter={(value: number) => [formatCurrency(value), "P/L"]}
+                    />
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                    <Line
+                      type="monotone"
+                      dataKey="pnl"
+                      stroke="hsl(var(--chart-1))"
+                      strokeWidth={2}
+                      dot={(props) => {
+                        const { cx, cy, payload } = props;
+                        const color = (payload.pnl || 0) >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))";
+                        return <circle cx={cx} cy={cy} r={4} fill={color} />;
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+                  No trades in this period
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Stats Grid - Compact */}
-          <div className="grid grid-cols-5 gap-2">
-            <div className="bg-secondary/30 rounded-md p-2 border border-border text-center">
-              <p className="text-[10px] text-muted-foreground">Trades</p>
-              <p className="text-sm font-bold">{totalTrades}</p>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="bg-secondary/30 rounded-lg p-3 border border-border text-center">
+              <p className="text-xs text-muted-foreground mb-1">Total Trades</p>
+              <p className="text-lg font-bold">{totalTrades}</p>
             </div>
-            <div className="bg-profit/10 rounded-md p-2 border border-profit/20 text-center">
-              <p className="text-[10px] text-muted-foreground">Winners</p>
-              <p className="text-sm font-bold text-profit">{winners.length}</p>
+            <div className="bg-profit/10 rounded-lg p-3 border border-profit/20 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Winners</p>
+              <p className="text-lg font-bold text-profit">{winners.length}</p>
             </div>
-            <div className="bg-loss/10 rounded-md p-2 border border-loss/20 text-center">
-              <p className="text-[10px] text-muted-foreground">Losers</p>
-              <p className="text-sm font-bold text-loss">{losers.length}</p>
+            <div className="bg-loss/10 rounded-lg p-3 border border-loss/20 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Losers</p>
+              <p className="text-lg font-bold text-loss">{losers.length}</p>
             </div>
-            <div className="bg-secondary/30 rounded-md p-2 border border-border text-center">
-              <p className="text-[10px] text-muted-foreground">Win Rate</p>
-              <p className={cn("text-sm font-bold", winRate >= 50 ? "text-profit" : "text-loss")}>
-                {winRate.toFixed(0)}%
+            <div className="bg-secondary/30 rounded-lg p-3 border border-border text-center">
+              <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
+              <p className={cn("text-lg font-bold", winRate >= 50 ? "text-profit" : "text-loss")}>
+                {winRate.toFixed(1)}%
               </p>
             </div>
             <div className={cn(
-              "rounded-md p-2 border text-center",
+              "rounded-lg p-3 border text-center",
               grossPnl >= 0 ? "bg-profit/10 border-profit/20" : "bg-loss/10 border-loss/20"
             )}>
-              <p className="text-[10px] text-muted-foreground">P/L</p>
-              <p className={cn("text-sm font-bold", grossPnl >= 0 ? "text-profit" : "text-loss")}>
+              <p className="text-xs text-muted-foreground mb-1">Gross P/L</p>
+              <p className={cn("text-lg font-bold", grossPnl >= 0 ? "text-profit" : "text-loss")}>
                 {formatCurrency(grossPnl)}
               </p>
             </div>
           </div>
 
-          {/* Trades Table - Compact */}
-          <div className="rounded-md border border-border overflow-hidden max-h-[180px] overflow-y-auto">
+          {/* Trades Table */}
+          <div className="rounded-lg border border-border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-secondary/50">
-                  <TableHead className="text-[10px] py-1.5">Time</TableHead>
-                  <TableHead className="text-[10px] py-1.5">Symbol</TableHead>
-                  <TableHead className="text-[10px] py-1.5">Side</TableHead>
-                  <TableHead className="text-[10px] py-1.5 text-right">P/L</TableHead>
+                  <TableHead className="text-xs">Open Time</TableHead>
+                  <TableHead className="text-xs">Instrument</TableHead>
+                  <TableHead className="text-xs">Side</TableHead>
+                  <TableHead className="text-xs text-right">Net P/L</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {periodTrades.length > 0 ? (
                   sortedTrades.map((trade) => (
                     <TableRow key={trade.id} className="hover:bg-secondary/30">
-                      <TableCell className="text-[11px] py-1.5">
+                      <TableCell className="text-xs">
                         {format(new Date(trade.entry_date), "MMM d, HH:mm")}
                       </TableCell>
-                      <TableCell className="text-[11px] py-1.5 font-medium">{trade.symbol}</TableCell>
-                      <TableCell className="text-[11px] py-1.5">
+                      <TableCell className="text-xs font-medium">{trade.symbol}</TableCell>
+                      <TableCell className="text-xs">
                         <span
                           className={cn(
-                            "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                            "px-2 py-0.5 rounded text-xs font-medium",
                             trade.trade_type === "long"
                               ? "bg-profit/20 text-profit"
                               : "bg-loss/20 text-loss"
@@ -487,7 +413,7 @@ export function PeriodDetailModal({
                       </TableCell>
                       <TableCell
                         className={cn(
-                          "text-[11px] py-1.5 text-right font-medium",
+                          "text-xs text-right font-medium",
                           (trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"
                         )}
                       >
@@ -497,7 +423,7 @@ export function PeriodDetailModal({
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4 text-xs">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                       No trades in this period
                     </TableCell>
                   </TableRow>
@@ -506,26 +432,99 @@ export function PeriodDetailModal({
             </Table>
           </div>
 
+          {/* Notes Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Notes</Label>
+            <div className="flex gap-1 mb-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleFormat("bold")}
+                className="h-8 w-8 p-0"
+              >
+                <Bold className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleFormat("italic")}
+                className="h-8 w-8 p-0"
+              >
+                <Italic className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleFormat("list")}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <Textarea
+              id="period-notes"
+              placeholder="Add your notes for this trading period..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+          </div>
+
+          {/* Screenshots Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Screenshots</Label>
+            <div className="flex flex-wrap gap-3">
+              {screenshots.map((url, index) => (
+                <div
+                  key={index}
+                  className="relative group w-24 h-24 rounded-lg border border-border overflow-hidden"
+                >
+                  <img src={url} alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => removeScreenshot(index)}
+                    className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <label className="w-24 h-24 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center cursor-pointer transition-colors">
+                <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+                <span className="text-xs text-muted-foreground">Upload</span>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleScreenshotUpload}
+                  className="hidden"
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+          </div>
+
           {/* Save Button */}
-          <div className="flex justify-end gap-2 pt-3 border-t border-border">
-            <Button variant="outline" size="sm" onClick={onClose}>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button
-              size="sm"
               onClick={handleSave}
               disabled={isSaving}
               className="gradient-primary shadow-glow"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5 mr-1.5" />
-                  Save
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Record
                 </>
               )}
             </Button>
