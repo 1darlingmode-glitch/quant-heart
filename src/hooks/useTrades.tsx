@@ -18,6 +18,7 @@ export interface Trade {
   status: string;
   strategy: string | null;
   notes: string | null;
+  reliability_score: number | null;
 }
 
 export interface TradeStats {
