@@ -320,6 +320,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
           periodLabel={selectedPeriod.label}
           periodStart={selectedPeriod.start}
           periodEnd={selectedPeriod.end}
+          periodType={activeTimeframe}
           trades={trades}
         />
       )}
