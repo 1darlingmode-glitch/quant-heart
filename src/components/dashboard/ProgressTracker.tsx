@@ -251,9 +251,10 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
         </div>
       </div>
 
-      {/* Date Range Label */}
-      <div className="mb-3">
+      {/* Date Range Label with hint */}
+      <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-medium text-foreground">{getDateRangeLabel()}</p>
+        <p className="text-xs text-muted-foreground/60">Click a box to journal</p>
       </div>
 
       <TooltipProvider>
@@ -325,10 +326,6 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
         </div>
       </div>
 
-      {/* Click hint */}
-      <p className="text-center text-xs text-muted-foreground/60 mt-2">
-        Click any box to view details and add journal notes
-      </p>
 
       {/* Period Detail Modal */}
       {selectedPeriod && (
