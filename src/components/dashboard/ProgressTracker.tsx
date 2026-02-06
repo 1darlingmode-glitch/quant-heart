@@ -60,10 +60,10 @@ function getPeriodData(trades: Trade[], timeframe: TimeframeType): PeriodData[] 
   
   switch (timeframe) {
     case "daily": {
-      // Last 30 days
+      // Last 30 days (30 boxes total)
       const startDate = subDays(now, 29);
       const days = eachDayOfInterval({ start: startDate, end: now });
-      periods = days.map((day) => ({
+      periods = days.slice(-30).map((day) => ({
         start: startOfDay(day),
         end: endOfDay(day),
         label: format(day, "MMM d"),
@@ -245,7 +245,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
 
       <TooltipProvider>
         <div className={cn(
-          "grid gap-1.5",
+          "grid gap-2",
           activeTimeframe === "daily" && "grid-cols-10",
           activeTimeframe === "weekly" && "grid-cols-6",
           activeTimeframe === "monthly" && "grid-cols-6",
@@ -266,14 +266,14 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
                   }}
                   onClick={() => setSelectedPeriod(period)}
                   className={cn(
-                    "aspect-square rounded-sm cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center",
-                    period.result === "win" && "bg-profit shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
-                    period.result === "loss" && "bg-loss shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-loss/50",
-                    period.result === "neutral" && "bg-muted/30 border border-border/40 hover:ring-muted-foreground/50"
+                    "aspect-square rounded-md cursor-pointer transition-all hover:scale-110 hover:ring-2 hover:ring-offset-2 hover:ring-offset-card flex items-center justify-center min-h-[28px] border",
+                    period.result === "win" && "bg-profit border-profit/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-profit/50",
+                    period.result === "loss" && "bg-loss border-loss/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.15),0_2px_4px_rgba(0,0,0,0.2)] hover:ring-loss/50",
+                    period.result === "neutral" && "bg-muted/50 border-border hover:ring-muted-foreground/50"
                   )}
                 >
                   {period.result === "neutral" && (
-                    <span className="text-[9px] font-medium text-muted-foreground/40">
+                    <span className="text-[9px] font-medium text-muted-foreground/60">
                       {getShortLabel(period.label, activeTimeframe)}
                     </span>
                   )}
@@ -307,7 +307,7 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
           <span className="text-xs text-muted-foreground">Losing</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-muted/30 border border-border/40" />
+          <div className="w-3 h-3 rounded-sm bg-muted/50 border border-border" />
           <span className="text-xs text-muted-foreground">No trades</span>
         </div>
       </div>
