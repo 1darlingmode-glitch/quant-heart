@@ -429,12 +429,39 @@ function JournalEntryList({ searchQuery }: { searchQuery: string }) {
     return `${prefix}$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   };
 
-  const filteredRecords = records.filter(
-    (record) =>
-      record.period_label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      record.period_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (record.notes && record.notes.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Get trades for a period to enable symbol search
+  const getTradesForPeriod = (record: PeriodRecord) => {
+    return trades.filter((t) => {
+      if (!t.exit_date || t.status !== "closed") return false;
+      const exitDate = new Date(t.exit_date);
+      const periodStart = new Date(record.period_start);
+      const periodEnd = new Date(record.period_end);
+      return exitDate >= periodStart && exitDate <= periodEnd;
+    });
+  };
+
+  const filteredRecords = records.filter((record) => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return true;
+
+    // Search by period label
+    if (record.period_label.toLowerCase().includes(query)) return true;
+
+    // Search by period type (daily, weekly, monthly, yearly)
+    if (record.period_type.toLowerCase().includes(query)) return true;
+
+    // Search by notes
+    if (record.notes && record.notes.toLowerCase().includes(query)) return true;
+
+    // Search by trade symbols in this period
+    const periodTrades = getTradesForPeriod(record);
+    if (periodTrades.some((t) => t.symbol.toLowerCase().includes(query))) return true;
+
+    // Search by market type
+    if (periodTrades.some((t) => t.market.toLowerCase().includes(query))) return true;
+
+    return false;
+  });
 
   if (isLoading) {
     return (
@@ -633,7 +660,7 @@ export default function Journal() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by period, type, or notes..."
+            placeholder="Search by period, type, notes, or symbol..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-card border-border"
