@@ -24,6 +24,7 @@ import { useResetTracking } from "@/hooks/useTrades";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompactView } from "@/hooks/useCompactView";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +62,7 @@ interface AppearanceSettings {
 
 export default function Settings() {
   const { user } = useAuth();
+  const { compactView, setCompactView } = useCompactView();
   const [activeSection, setActiveSection] = useState("notifications");
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains("dark")
@@ -79,13 +81,10 @@ export default function Settings() {
     };
   });
 
-  // Appearance settings state
-  const [appearance, setAppearance] = useState<AppearanceSettings>(() => {
+  // Appearance settings state (showAnimations only, compactView uses global hook)
+  const [showAnimations, setShowAnimations] = useState(() => {
     const saved = localStorage.getItem("appearanceSettings");
-    return saved ? JSON.parse(saved) : {
-      compactView: false,
-      showAnimations: true,
-    };
+    return saved ? JSON.parse(saved).showAnimations ?? true : true;
   });
 
   // Security state
@@ -101,10 +100,12 @@ export default function Settings() {
     localStorage.setItem("notificationSettings", JSON.stringify(notifications));
   }, [notifications]);
 
-  // Save appearance settings to localStorage
+  // Save animations setting to localStorage
   useEffect(() => {
-    localStorage.setItem("appearanceSettings", JSON.stringify(appearance));
-  }, [appearance]);
+    const saved = localStorage.getItem("appearanceSettings");
+    const current = saved ? JSON.parse(saved) : {};
+    localStorage.setItem("appearanceSettings", JSON.stringify({ ...current, showAnimations }));
+  }, [showAnimations]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -132,12 +133,16 @@ export default function Settings() {
     });
   };
 
-  const handleAppearanceChange = (key: keyof AppearanceSettings) => {
-    setAppearance((prev) => {
-      const newValue = !prev[key];
-      toast.success(`${key === 'compactView' ? 'Compact view' : 'Animations'} ${newValue ? 'enabled' : 'disabled'}`);
-      return { ...prev, [key]: newValue };
-    });
+  const handleCompactViewChange = () => {
+    const newValue = !compactView;
+    setCompactView(newValue);
+    toast.success(`Compact view ${newValue ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleAnimationsChange = () => {
+    const newValue = !showAnimations;
+    setShowAnimations(newValue);
+    toast.success(`Animations ${newValue ? 'enabled' : 'disabled'}`);
   };
 
   const handleChangePassword = async () => {
@@ -248,8 +253,8 @@ export default function Settings() {
                     </p>
                   </div>
                   <Switch 
-                    checked={appearance.compactView} 
-                    onCheckedChange={() => handleAppearanceChange('compactView')} 
+                    checked={compactView} 
+                    onCheckedChange={handleCompactViewChange} 
                   />
                 </div>
 
@@ -261,8 +266,8 @@ export default function Settings() {
                     </p>
                   </div>
                   <Switch 
-                    checked={appearance.showAnimations} 
-                    onCheckedChange={() => handleAppearanceChange('showAnimations')} 
+                    checked={showAnimations} 
+                    onCheckedChange={handleAnimationsChange} 
                   />
                 </div>
               </div>
