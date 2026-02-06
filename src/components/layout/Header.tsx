@@ -1,4 +1,4 @@
-import { Bell, Search, Sun, Moon, LogOut, TrendingUp, AlertTriangle, Target, Check, X } from "lucide-react";
+import { Bell, Search, Sun, Moon, LogOut, TrendingUp, AlertTriangle, Target, Check, X, User, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -9,6 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +24,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { useTrades } from "@/hooks/useTrades";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const alertIcons: Record<string, any> = {
   milestone: TrendingUp,
@@ -56,15 +67,55 @@ export function Header() {
   const [isDark, setIsDark] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { alerts, unreadCount, markAsRead, markAllAsRead } = useAlerts();
   const { trades } = useTrades();
+  const { data: profile } = useProfile();
+  const queryClient = useQueryClient();
+
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
   }, []);
+
+  const handleEditUsername = () => {
+    setNewUsername(profile?.display_name || "");
+    setIsEditingUsername(true);
+  };
+
+  const handleSaveUsername = async () => {
+    if (!user) return;
+    
+    const trimmedName = newUsername.trim();
+    if (trimmedName.length > 50) {
+      toast.error("Username must be 50 characters or less");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: trimmedName || null })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      toast.success("Username updated successfully");
+      setIsEditingUsername(false);
+    } catch (error) {
+      toast.error("Failed to update username");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -199,7 +250,7 @@ export function Header() {
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          className="text-muted-foreground hover:text-foreground hover:bg-primary/10"
+          className="text-muted-foreground hover:text-foreground hover:bg-accent"
         >
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </Button>
@@ -210,7 +261,7 @@ export function Header() {
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-muted-foreground hover:text-foreground hover:bg-primary/10"
+              className="relative text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -302,22 +353,28 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-3 px-2">
+            <Button variant="ghost" className="flex items-center gap-3 px-2 hover:bg-accent">
               <Avatar className="w-9 h-9 border-2 border-primary/20">
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm">
-                  {user?.email ? getInitials(user.email) : "U"}
+                  {displayName.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{user?.email?.split("@")[0] || "User"}</p>
+                <p className="text-sm font-medium">{displayName}</p>
                 <p className="text-xs text-muted-foreground">Trader</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium">{user?.email}</p>
+              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
             </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleEditUsername} className="cursor-pointer">
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Username
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
               <LogOut className="w-4 h-4 mr-2" />
@@ -326,6 +383,35 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Edit Username Dialog */}
+      <Dialog open={isEditingUsername} onOpenChange={setIsEditingUsername}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Username</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              placeholder="Enter your username"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              maxLength={50}
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              This name will be displayed in the header. Max 50 characters.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditingUsername(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveUsername} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }
