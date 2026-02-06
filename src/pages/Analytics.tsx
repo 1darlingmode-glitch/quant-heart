@@ -75,103 +75,91 @@ export default function Analytics() {
         ))}
       </motion.div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-profit/10 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-profit" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Best Trade</p>
-              <p className="font-bold text-lg text-profit">
-                {stats.bestTrade > 0 ? `+$${stats.bestTrade.toLocaleString()}` : "$0"}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {bestTrade?.exit_date ? format(new Date(bestTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-loss/10 flex items-center justify-center">
-              <TrendingDown className="w-5 h-5 text-loss" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Worst Trade</p>
-              <p className="font-bold text-lg text-loss">
-                {stats.worstTrade < 0 ? `-$${Math.abs(stats.worstTrade).toLocaleString()}` : "$0"}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {worstTrade?.exit_date ? format(new Date(worstTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Target className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Avg Win</p>
-              <p className="font-bold text-lg">${Math.round(stats.avgWin).toLocaleString()}</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">vs ${Math.round(stats.avgLoss).toLocaleString()} avg loss</p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-card rounded-xl border border-border p-5 shadow-card"
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-chart-3/10 flex items-center justify-center">
-              <Award className="w-5 h-5 text-chart-3" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Current Streak</p>
-              <p className="font-bold text-lg">
-                {stats.currentStreak} {stats.streakType !== "none" ? stats.streakType : ""}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {stats.streakType === "win" ? "Winning streak" : stats.streakType === "loss" ? "Losing streak" : "No streak"}
-          </p>
-        </motion.div>
-      </div>
-
       {/* Analytics Toggle View - TradeZella Style */}
       <div className="mb-8">
         <AnalyticsToggleView />
       </div>
 
+      {/* Summary Metrics */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="mb-8"
+      >
+        <h3 className="font-semibold text-lg mb-4">Summary</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-profit/10 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-profit" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Best Trade</p>
+                <p className="font-bold text-lg text-profit">
+                  {stats.bestTrade > 0 ? `+$${stats.bestTrade.toLocaleString()}` : "$0"}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {bestTrade?.exit_date ? format(new Date(bestTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
+            </p>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-loss/10 flex items-center justify-center">
+                <TrendingDown className="w-5 h-5 text-loss" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Worst Trade</p>
+                <p className="font-bold text-lg text-loss">
+                  {stats.worstTrade < 0 ? `-$${Math.abs(stats.worstTrade).toLocaleString()}` : "$0"}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {worstTrade?.exit_date ? format(new Date(worstTrade.exit_date), "MMM d, yyyy") : "No trades yet"}
+            </p>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Target className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Avg Win</p>
+                <p className="font-bold text-lg">${Math.round(stats.avgWin).toLocaleString()}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">vs ${Math.round(stats.avgLoss).toLocaleString()} avg loss</p>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border p-5 shadow-card">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-chart-3/10 flex items-center justify-center">
+                <Award className="w-5 h-5 text-chart-3" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Current Streak</p>
+                <p className="font-bold text-lg">
+                  {stats.currentStreak} {stats.streakType !== "none" ? stats.streakType : ""}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {stats.streakType === "win" ? "Winning streak" : stats.streakType === "loss" ? "Losing streak" : "No streak"}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Rule Compliance Analytics */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
+        transition={{ delay: 0.5 }}
       >
         <h3 className="font-semibold text-lg mb-4">Rule Compliance Analytics</h3>
         <RuleAnalytics />
