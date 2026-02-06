@@ -140,7 +140,7 @@ export default function Dashboard() {
         {/* Left Column - Charts */}
         <div className="lg:col-span-2 space-y-6">
           <ProgressTracker trades={trades} />
-          <EquityChart data={equityCurve} />
+          <EquityChart trades={trades} />
           <RecentTrades trades={recentTrades} />
         </div>
 
