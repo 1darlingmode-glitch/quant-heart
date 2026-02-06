@@ -42,10 +42,13 @@ import {
   Target,
   DollarSign,
   Upload,
+  Save,
+  Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { usePeriodRecords } from "@/hooks/usePeriodRecords";
 
 interface PeriodDetailModalProps {
   isOpen: boolean;
@@ -53,6 +56,7 @@ interface PeriodDetailModalProps {
   periodLabel: string;
   periodStart: Date;
   periodEnd: Date;
+  periodType: string;
   trades: Trade[];
 }
 
@@ -68,13 +72,34 @@ export function PeriodDetailModal({
   periodLabel,
   periodStart,
   periodEnd,
+  periodType,
   trades,
 }: PeriodDetailModalProps) {
   const { user } = useAuth();
+  const { saveRecord, uploadScreenshot, records } = usePeriodRecords();
   const [notes, setNotes] = useState("");
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Load existing record if available
+  useEffect(() => {
+    if (isOpen) {
+      const existingRecord = records.find(
+        (r) =>
+          r.period_start === periodStart.toISOString() &&
+          r.period_end === periodEnd.toISOString()
+      );
+      if (existingRecord) {
+        setNotes(existingRecord.notes || "");
+        setScreenshots(existingRecord.screenshots || []);
+      } else {
+        setNotes("");
+        setScreenshots([]);
+      }
+    }
+  }, [isOpen, records, periodStart, periodEnd]);
 
   // Update current time every second
   useEffect(() => {
@@ -164,15 +189,47 @@ export function PeriodDetailModal({
     setIsUploading(true);
     try {
       for (const file of Array.from(files)) {
-        // For now, create a local URL - in production this would upload to Supabase storage
-        const url = URL.createObjectURL(file);
+        const url = await uploadScreenshot(file);
         setScreenshots((prev) => [...prev, url]);
       }
-      toast.success("Screenshot added!");
+      toast.success("Screenshot uploaded!");
     } catch (error) {
+      console.error("Upload error:", error);
       toast.error("Failed to upload screenshot");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Handle save record
+  const handleSave = async () => {
+    if (!user) {
+      toast.error("Please sign in to save records");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await saveRecord.mutateAsync({
+        period_type: periodType,
+        period_start: periodStart.toISOString(),
+        period_end: periodEnd.toISOString(),
+        period_label: periodLabel,
+        notes,
+        screenshots,
+        total_trades: totalTrades,
+        winners: winners.length,
+        losers: losers.length,
+        win_rate: winRate,
+        gross_pnl: grossPnl,
+        gross_profit: grossProfit,
+        gross_loss: grossLoss,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -450,8 +507,27 @@ export function PeriodDetailModal({
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end pt-4 border-t border-border">
-            <Button onClick={onClose}>Close</Button>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="gradient-primary shadow-glow"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Record
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </DialogContent>

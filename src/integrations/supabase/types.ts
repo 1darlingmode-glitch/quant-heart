@@ -100,6 +100,66 @@ export type Database = {
           },
         ]
       }
+      period_records: {
+        Row: {
+          created_at: string
+          gross_loss: number | null
+          gross_pnl: number | null
+          gross_profit: number | null
+          id: string
+          losers: number | null
+          notes: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          period_type: string
+          screenshots: string[] | null
+          total_trades: number | null
+          updated_at: string
+          user_id: string
+          win_rate: number | null
+          winners: number | null
+        }
+        Insert: {
+          created_at?: string
+          gross_loss?: number | null
+          gross_pnl?: number | null
+          gross_profit?: number | null
+          id?: string
+          losers?: number | null
+          notes?: string | null
+          period_end: string
+          period_label: string
+          period_start: string
+          period_type: string
+          screenshots?: string[] | null
+          total_trades?: number | null
+          updated_at?: string
+          user_id: string
+          win_rate?: number | null
+          winners?: number | null
+        }
+        Update: {
+          created_at?: string
+          gross_loss?: number | null
+          gross_pnl?: number | null
+          gross_profit?: number | null
+          id?: string
+          losers?: number | null
+          notes?: string | null
+          period_end?: string
+          period_label?: string
+          period_start?: string
+          period_type?: string
+          screenshots?: string[] | null
+          total_trades?: number | null
+          updated_at?: string
+          user_id?: string
+          win_rate?: number | null
+          winners?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
