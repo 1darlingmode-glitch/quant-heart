@@ -1,6 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import {
   Bell,
   Palette,
@@ -11,6 +12,7 @@ import {
   Loader2,
   Moon,
   Sun,
+  Monitor,
   Lock,
   Eye,
   EyeOff,
@@ -62,11 +64,10 @@ interface AppearanceSettings {
 
 export default function Settings() {
   const { user } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { compactView, setCompactView } = useCompactView();
   const [activeSection, setActiveSection] = useState("notifications");
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  );
+  const [mounted, setMounted] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const { resetAllData } = useResetTracking();
 
@@ -107,10 +108,10 @@ export default function Settings() {
     localStorage.setItem("appearanceSettings", JSON.stringify({ ...current, showAnimations }));
   }, [showAnimations]);
 
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle("dark");
-  };
+  // Ensure component is mounted before showing theme UI (prevents hydration mismatch)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleResetTracking = async () => {
     setIsResetting(true);
@@ -223,26 +224,51 @@ export default function Settings() {
           transition={{ delay: 0.2 }}
           className="lg:col-span-3"
         >
-          {activeSection === "appearance" && (
+          {activeSection === "appearance" && mounted && (
             <div className="bg-card rounded-xl border border-border shadow-card p-6">
               <h2 className="text-xl font-semibold mb-6">Appearance</h2>
 
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-                  <div className="flex items-center gap-4">
-                    {isDark ? (
-                      <Moon className="w-5 h-5 text-primary" />
-                    ) : (
-                      <Sun className="w-5 h-5 text-primary" />
-                    )}
-                    <div>
-                      <p className="font-medium">Dark Mode</p>
-                      <p className="text-sm text-muted-foreground">
-                        Toggle between light and dark themes
-                      </p>
-                    </div>
+                {/* Theme Selection */}
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <p className="font-medium mb-3">Theme</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Choose your preferred color scheme
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={theme === "light" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("light")}
+                      className="flex items-center gap-2"
+                    >
+                      <Sun className="w-4 h-4" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("dark")}
+                      className="flex items-center gap-2"
+                    >
+                      <Moon className="w-4 h-4" />
+                      Dark
+                    </Button>
+                    <Button
+                      variant={theme === "system" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("system")}
+                      className="flex items-center gap-2"
+                    >
+                      <Monitor className="w-4 h-4" />
+                      System
+                    </Button>
                   </div>
-                  <Switch checked={isDark} onCheckedChange={toggleTheme} />
+                  {theme === "system" && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Currently using {resolvedTheme} mode based on your device settings
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
