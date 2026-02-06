@@ -325,6 +325,11 @@ export function ProgressTracker({ trades = [] }: ProgressTrackerProps) {
         </div>
       </div>
 
+      {/* Click hint */}
+      <p className="text-center text-xs text-muted-foreground/60 mt-2">
+        Click any box to view details and add journal notes
+      </p>
+
       {/* Period Detail Modal */}
       {selectedPeriod && (
         <PeriodDetailModal
