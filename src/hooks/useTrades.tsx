@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { startOfMonth, startOfDay, subMonths, format } from "date-fns";
+import { useEffect } from "react";
 
 export interface Trade {
   id: string;
@@ -299,6 +300,7 @@ function calculateEquityCurve(trades: Trade[], startingBalance = 10000): EquityP
 
 export function useTrades() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const tradesQuery = useQuery({
     queryKey: ["trades", user?.id],
@@ -316,6 +318,32 @@ export function useTrades() {
     },
     enabled: !!user,
   });
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`trades-realtime-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trades',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Invalidate and refetch trades when any change occurs
+          queryClient.invalidateQueries({ queryKey: ["trades", user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   const trades = tradesQuery.data || [];
   const stats = calculateStats(trades);
@@ -358,4 +386,61 @@ export function useBrokerAccounts() {
     },
     enabled: !!user,
   });
+}
+
+// Hook to reset all user tracking data
+export function useResetTracking() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const resetAllData = async () => {
+    if (!user) throw new Error("User not authenticated");
+
+    // Delete all user data in order (respecting foreign keys)
+    const { error: evalError } = await supabase
+      .from("trade_evaluations")
+      .delete()
+      .eq("user_id", user.id);
+    if (evalError) throw evalError;
+
+    const { error: journalError } = await supabase
+      .from("journal_entries")
+      .delete()
+      .eq("user_id", user.id);
+    if (journalError) throw journalError;
+
+    const { error: periodError } = await supabase
+      .from("period_records")
+      .delete()
+      .eq("user_id", user.id);
+    if (periodError) throw periodError;
+
+    const { error: tradesError } = await supabase
+      .from("trades")
+      .delete()
+      .eq("user_id", user.id);
+    if (tradesError) throw tradesError;
+
+    const { error: rulesError } = await supabase
+      .from("trading_rules")
+      .delete()
+      .eq("user_id", user.id);
+    if (rulesError) throw rulesError;
+
+    const { error: alertsError } = await supabase
+      .from("user_alerts")
+      .delete()
+      .eq("user_id", user.id);
+    if (alertsError) throw alertsError;
+
+    // Invalidate all queries to refresh the UI
+    queryClient.invalidateQueries({ queryKey: ["trades"] });
+    queryClient.invalidateQueries({ queryKey: ["trading_rules"] });
+    queryClient.invalidateQueries({ queryKey: ["period_records"] });
+    queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+    queryClient.invalidateQueries({ queryKey: ["trade_evaluations"] });
+    queryClient.invalidateQueries({ queryKey: ["user_alerts"] });
+  };
+
+  return { resetAllData };
 }
