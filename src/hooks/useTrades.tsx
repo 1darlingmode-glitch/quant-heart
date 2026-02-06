@@ -321,21 +321,22 @@ export function useTrades() {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
+    const userId = user.id;
     const channel = supabase
-      .channel(`trades-realtime-${user.id}`)
+      .channel(`trades-realtime-${userId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'trades',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
           // Invalidate and refetch trades when any change occurs
-          queryClient.invalidateQueries({ queryKey: ["trades", user.id] });
+          queryClient.invalidateQueries({ queryKey: ["trades", userId] });
         }
       )
       .subscribe();
@@ -343,7 +344,9 @@ export function useTrades() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+    // queryClient is a stable reference from useQueryClient, safe to exclude
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const trades = tradesQuery.data || [];
   const stats = calculateStats(trades);
