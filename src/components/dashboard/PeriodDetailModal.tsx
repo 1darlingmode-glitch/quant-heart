@@ -81,8 +81,6 @@ export function PeriodDetailModal({
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   // Load existing record if available
   useEffect(() => {
     if (isOpen) {
@@ -100,12 +98,6 @@ export function PeriodDetailModal({
       }
     }
   }, [isOpen, records, periodStart, periodEnd]);
-
-  // Update current time every second
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Filter trades for this period
   const periodTrades = trades.filter((t) => {
@@ -237,47 +229,67 @@ export function PeriodDetailModal({
     setScreenshots((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Format period date for header
+  const getPeriodDateLabel = (): string => {
+    switch (periodType) {
+      case "daily":
+        return format(periodStart, "EEEE, MMMM d, yyyy");
+      case "weekly":
+        return `${format(periodStart, "MMM d")} - ${format(periodEnd, "MMM d, yyyy")}`;
+      case "monthly":
+        return format(periodStart, "MMMM yyyy");
+      case "yearly":
+        return format(periodStart, "yyyy");
+      default:
+        return periodLabel;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex flex-col gap-1">
-            <span className="text-xl">{periodLabel}</span>
+            <span className="text-lg">{periodLabel}</span>
             <span className="text-sm font-normal text-muted-foreground flex items-center gap-2">
               <Clock className="h-3.5 w-3.5" />
-              {format(currentTime, "EEEE, MMMM d, yyyy • HH:mm:ss")}
+              {getPeriodDateLabel()}
             </span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
-          {/* P/L Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-4 mt-3">
+          {/* P/L Charts - Compact */}
+          <div className="grid grid-cols-2 gap-3">
             {/* Cumulative P/L Chart */}
-            <div className="bg-secondary/30 rounded-lg p-4 border border-border">
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
+            <div className="bg-secondary/30 rounded-lg p-3 border border-border">
+              <h4 className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                <TrendingUp className="h-3 w-3 text-primary" />
                 Cumulative P/L
               </h4>
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={100}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis
                       dataKey="trade"
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={{ stroke: "hsl(var(--border))" }}
+                      tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={{ stroke: "hsl(var(--border))" }}
                       tickFormatter={(v) => `$${v}`}
+                      tickLine={false}
+                      width={35}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
                       }}
                       labelFormatter={(label) => `Trade ${label}`}
                       formatter={(value: number) => [formatCurrency(value), "P/L"]}
@@ -287,43 +299,47 @@ export function PeriodDetailModal({
                       type="monotone"
                       dataKey="cumulative"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--primary))", r: 3 }}
+                      strokeWidth={1.5}
+                      dot={{ fill: "hsl(var(--primary))", r: 2 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
-                  No trades in this period
+                <div className="h-[100px] flex items-center justify-center text-muted-foreground text-xs">
+                  No trades
                 </div>
               )}
             </div>
 
             {/* Individual Trade P/L Chart */}
-            <div className="bg-secondary/30 rounded-lg p-4 border border-border">
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" />
+            <div className="bg-secondary/30 rounded-lg p-3 border border-border">
+              <h4 className="text-xs font-medium mb-2 flex items-center gap-1.5">
+                <DollarSign className="h-3 w-3 text-primary" />
                 Trade P/L
               </h4>
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={100}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis
                       dataKey="time"
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={{ stroke: "hsl(var(--border))" }}
+                      tickLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={{ stroke: "hsl(var(--border))" }}
                       tickFormatter={(v) => `$${v}`}
+                      tickLine={false}
+                      width={35}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
                       }}
                       formatter={(value: number) => [formatCurrency(value), "P/L"]}
                     />
@@ -332,49 +348,49 @@ export function PeriodDetailModal({
                       type="monotone"
                       dataKey="pnl"
                       stroke="hsl(var(--chart-1))"
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                       dot={(props) => {
                         const { cx, cy, payload } = props;
                         const color = (payload.pnl || 0) >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))";
-                        return <circle cx={cx} cy={cy} r={4} fill={color} />;
+                        return <circle cx={cx} cy={cy} r={3} fill={color} />;
                       }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
-                  No trades in this period
+                <div className="h-[100px] flex items-center justify-center text-muted-foreground text-xs">
+                  No trades
                 </div>
               )}
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <div className="bg-secondary/30 rounded-lg p-3 border border-border text-center">
-              <p className="text-xs text-muted-foreground mb-1">Total Trades</p>
-              <p className="text-lg font-bold">{totalTrades}</p>
+          {/* Stats Grid - Compact */}
+          <div className="grid grid-cols-5 gap-2">
+            <div className="bg-secondary/30 rounded-lg p-2 border border-border text-center">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Total</p>
+              <p className="text-sm font-bold">{totalTrades}</p>
             </div>
-            <div className="bg-profit/10 rounded-lg p-3 border border-profit/20 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Winners</p>
-              <p className="text-lg font-bold text-profit">{winners.length}</p>
+            <div className="bg-profit/10 rounded-lg p-2 border border-profit/20 text-center">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Winners</p>
+              <p className="text-sm font-bold text-profit">{winners.length}</p>
             </div>
-            <div className="bg-loss/10 rounded-lg p-3 border border-loss/20 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Losers</p>
-              <p className="text-lg font-bold text-loss">{losers.length}</p>
+            <div className="bg-loss/10 rounded-lg p-2 border border-loss/20 text-center">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Losers</p>
+              <p className="text-sm font-bold text-loss">{losers.length}</p>
             </div>
-            <div className="bg-secondary/30 rounded-lg p-3 border border-border text-center">
-              <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
-              <p className={cn("text-lg font-bold", winRate >= 50 ? "text-profit" : "text-loss")}>
+            <div className="bg-secondary/30 rounded-lg p-2 border border-border text-center">
+              <p className="text-[10px] text-muted-foreground mb-0.5">Win Rate</p>
+              <p className={cn("text-sm font-bold", winRate >= 50 ? "text-profit" : "text-loss")}>
                 {winRate.toFixed(1)}%
               </p>
             </div>
             <div className={cn(
-              "rounded-lg p-3 border text-center",
+              "rounded-lg p-2 border text-center",
               grossPnl >= 0 ? "bg-profit/10 border-profit/20" : "bg-loss/10 border-loss/20"
             )}>
-              <p className="text-xs text-muted-foreground mb-1">Gross P/L</p>
-              <p className={cn("text-lg font-bold", grossPnl >= 0 ? "text-profit" : "text-loss")}>
+              <p className="text-[10px] text-muted-foreground mb-0.5">P/L</p>
+              <p className={cn("text-sm font-bold", grossPnl >= 0 ? "text-profit" : "text-loss")}>
                 {formatCurrency(grossPnl)}
               </p>
             </div>
