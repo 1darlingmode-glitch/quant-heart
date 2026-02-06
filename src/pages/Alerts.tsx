@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import {
   Bell,
   TrendingUp,
-  TrendingDown,
   Target,
   AlertTriangle,
   Check,
@@ -12,49 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-const alerts = [
-  {
-    id: 1,
-    type: "milestone",
-    title: "New High Reached!",
-    message: "Your portfolio reached a new all-time high of $66,470",
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 2,
-    type: "reminder",
-    title: "Journal Reminder",
-    message: "Don't forget to journal your 3 trades from today",
-    time: "4 hours ago",
-    read: false,
-  },
-  {
-    id: 3,
-    type: "warning",
-    title: "Drawdown Alert",
-    message: "Your weekly drawdown is approaching the 5% limit",
-    time: "1 day ago",
-    read: true,
-  },
-  {
-    id: 4,
-    type: "success",
-    title: "Win Streak!",
-    message: "Congratulations! You've completed 5 winning trades in a row",
-    time: "2 days ago",
-    read: true,
-  },
-  {
-    id: 5,
-    type: "info",
-    title: "Trade Synced",
-    message: "15 new trades imported from Interactive Brokers",
-    time: "3 days ago",
-    read: true,
-  },
-];
+import { useAlerts } from "@/hooks/useAlerts";
+import { formatDistanceToNow } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const alertIcons: Record<string, any> = {
   milestone: TrendingUp,
@@ -73,7 +32,15 @@ const alertStyles: Record<string, string> = {
 };
 
 export default function Alerts() {
-  const unreadCount = alerts.filter((a) => !a.read).length;
+  const {
+    alerts,
+    unreadCount,
+    isLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteAlert,
+    clearAllAlerts,
+  } = useAlerts();
 
   return (
     <AppLayout>
@@ -97,65 +64,113 @@ export default function Alerts() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-card">
+          <Button
+            variant="outline"
+            className="bg-card"
+            onClick={() => markAllAsRead()}
+            disabled={unreadCount === 0}
+          >
             <Check className="w-4 h-4 mr-2" />
             Mark All Read
           </Button>
-          <Button variant="outline" className="bg-card text-muted-foreground">
+          <Button
+            variant="outline"
+            className="bg-card text-muted-foreground"
+            onClick={() => clearAllAlerts()}
+            disabled={alerts.length === 0}
+          >
             <Trash2 className="w-4 h-4 mr-2" />
             Clear All
           </Button>
         </div>
       </motion.div>
 
-      {/* Alerts List */}
-      <div className="space-y-3">
-        {alerts.map((alert, index) => {
-          const Icon = alertIcons[alert.type];
-          return (
-            <motion.div
-              key={alert.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              className={cn(
-                "bg-card rounded-xl border shadow-card p-5 transition-all cursor-pointer hover:shadow-card-hover",
-                alert.read ? "border-border" : "border-primary/30"
-              )}
-            >
+      {/* Loading State */}
+      {isLoading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card rounded-xl border border-border p-5">
               <div className="flex items-start gap-4">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                    alertStyles[alert.type]
-                  )}
-                >
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className={cn("font-semibold", !alert.read && "text-foreground")}>
-                        {alert.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {alert.message}
-                      </p>
-                    </div>
-                    {!alert.read && (
-                      <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">{alert.time}</p>
+                <Skeleton className="w-10 h-10 rounded-lg" />
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-40 mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-3 w-20" />
                 </div>
               </div>
-            </motion.div>
-          );
-        })}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Alerts List */}
+      {!isLoading && alerts.length > 0 && (
+        <div className="space-y-3">
+          {alerts.map((alert, index) => {
+            const Icon = alertIcons[alert.type] || Bell;
+            return (
+              <motion.div
+                key={alert.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 + index * 0.03 }}
+                className={cn(
+                  "bg-card rounded-xl border shadow-sm p-5 transition-all cursor-pointer hover:shadow-md group",
+                  alert.read ? "border-border" : "border-primary/30"
+                )}
+                onClick={() => {
+                  if (!alert.read) markAsRead(alert.id);
+                }}
+              >
+                <div className="flex items-start gap-4">
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
+                      alertStyles[alert.type]
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className={cn("font-semibold", !alert.read && "text-foreground")}>
+                          {alert.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {alert.message}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!alert.read && (
+                          <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteAlert(alert.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Empty State */}
-      {alerts.length === 0 && (
+      {!isLoading && alerts.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
