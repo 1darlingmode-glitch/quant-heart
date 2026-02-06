@@ -8,42 +8,138 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { format, subHours, subDays, subWeeks, subMonths, subYears, startOfHour } from "date-fns";
+
+interface Trade {
+  id: string;
+  pnl: number | null;
+  exit_date: string | null;
+  status: string;
+}
 
 interface EquityPoint {
   date: string;
   equity: number;
+  timestamp: number;
 }
 
 interface EquityChartProps {
-  data: EquityPoint[];
+  trades: Trade[];
+  startingBalance?: number;
 }
 
-const timeframes = ["1W", "1M", "3M", "6M", "1Y", "ALL"];
+const timeframes = ["1H", "1D", "1W", "1M", "3M", "6M", "1Y", "ALL"];
 
-export function EquityChart({ data }: EquityChartProps) {
-  const [activeTimeframe, setActiveTimeframe] = useState("1Y");
+export function EquityChart({ trades, startingBalance = 10000 }: EquityChartProps) {
+  const [activeTimeframe, setActiveTimeframe] = useState("1M");
 
-  // Filter data based on timeframe (simplified - just show different amounts of data)
-  const getFilteredData = () => {
+  const filteredData = useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+    let groupFormat: string;
+    let displayFormat: string;
+
     switch (activeTimeframe) {
+      case "1H":
+        startDate = subHours(now, 1);
+        groupFormat = "HH:mm";
+        displayFormat = "HH:mm";
+        break;
+      case "1D":
+        startDate = subDays(now, 1);
+        groupFormat = "yyyy-MM-dd HH";
+        displayFormat = "HH:mm";
+        break;
       case "1W":
-        return data.slice(-1);
+        startDate = subWeeks(now, 1);
+        groupFormat = "yyyy-MM-dd";
+        displayFormat = "EEE";
+        break;
       case "1M":
-        return data.slice(-1);
+        startDate = subMonths(now, 1);
+        groupFormat = "yyyy-MM-dd";
+        displayFormat = "MMM d";
+        break;
       case "3M":
-        return data.slice(-3);
+        startDate = subMonths(now, 3);
+        groupFormat = "yyyy-MM-dd";
+        displayFormat = "MMM d";
+        break;
       case "6M":
-        return data.slice(-6);
+        startDate = subMonths(now, 6);
+        groupFormat = "yyyy-'W'ww";
+        displayFormat = "MMM d";
+        break;
       case "1Y":
+        startDate = subYears(now, 1);
+        groupFormat = "yyyy-MM";
+        displayFormat = "MMM";
+        break;
       case "ALL":
       default:
-        return data;
+        startDate = new Date(0);
+        groupFormat = "yyyy-MM";
+        displayFormat = "MMM yy";
+        break;
     }
-  };
 
-  const filteredData = getFilteredData();
+    // Filter and sort closed trades within the timeframe
+    const closedTrades = trades
+      .filter((t) => t.status === "closed" && t.pnl !== null && t.exit_date)
+      .filter((t) => new Date(t.exit_date!) >= startDate)
+      .sort((a, b) => new Date(a.exit_date!).getTime() - new Date(b.exit_date!).getTime());
+
+    if (closedTrades.length === 0) {
+      // Return current point with starting balance
+      return [{ date: format(now, displayFormat), equity: startingBalance, timestamp: now.getTime() }];
+    }
+
+    // Calculate cumulative equity for each trade in timeframe
+    // First, get total equity before the timeframe started
+    const tradesBeforeTimeframe = trades
+      .filter((t) => t.status === "closed" && t.pnl !== null && t.exit_date)
+      .filter((t) => new Date(t.exit_date!) < startDate)
+      .reduce((sum, t) => sum + (t.pnl || 0), 0);
+
+    let cumulative = startingBalance + tradesBeforeTimeframe;
+
+    // Group trades by the appropriate time period
+    const groupedEquity = new Map<string, { equity: number; displayDate: string; timestamp: number }>();
+
+    for (const trade of closedTrades) {
+      const tradeDate = new Date(trade.exit_date!);
+      const groupKey = format(tradeDate, groupFormat);
+      const displayDate = format(tradeDate, displayFormat);
+      cumulative += trade.pnl || 0;
+      groupedEquity.set(groupKey, { 
+        equity: cumulative, 
+        displayDate, 
+        timestamp: tradeDate.getTime() 
+      });
+    }
+
+    // Convert to array and sort by timestamp
+    const points: EquityPoint[] = Array.from(groupedEquity.entries())
+      .map(([_, data]) => ({
+        date: data.displayDate,
+        equity: data.equity,
+        timestamp: data.timestamp,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    // Add starting point if we have equity before timeframe
+    if (tradesBeforeTimeframe !== 0 && points.length > 0) {
+      points.unshift({
+        date: format(startDate, displayFormat),
+        equity: startingBalance + tradesBeforeTimeframe,
+        timestamp: startDate.getTime(),
+      });
+    }
+
+    return points.length > 0 ? points : [{ date: format(now, displayFormat), equity: startingBalance, timestamp: now.getTime() }];
+  }, [trades, activeTimeframe, startingBalance]);
 
   return (
     <motion.div
@@ -65,7 +161,7 @@ export function EquityChart({ data }: EquityChartProps) {
               key={tf}
               onClick={() => setActiveTimeframe(tf)}
               className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                "px-2 py-1.5 text-xs font-medium rounded-md transition-all",
                 activeTimeframe === tf
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
