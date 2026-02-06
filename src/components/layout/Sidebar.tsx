@@ -1,17 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   BookOpen,
   ClipboardCheck,
   BarChart3,
   Settings,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   Wallet,
   Bell,
 } from "lucide-react";
+import logoLight from "@/assets/logo-light.png";
+import logoDark from "@/assets/logo-dark.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSidebarState } from "@/hooks/useSidebarState";
@@ -29,6 +31,7 @@ const navItems = [
 export function Sidebar() {
   const { collapsed, toggle } = useSidebarState();
   const location = useLocation();
+  const { resolvedTheme } = useTheme();
 
   return (
     <motion.aside
@@ -45,19 +48,24 @@ export function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-3"
+              className="flex items-center"
             >
-              <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
-                <TrendingUp className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="font-bold text-lg text-sidebar-foreground">TradeFlow</span>
+              <img 
+                src={resolvedTheme === "dark" ? logoDark : logoLight} 
+                alt="PipTrace" 
+                className="h-8 object-contain"
+              />
             </motion.div>
           )}
         </AnimatePresence>
         
         {collapsed && (
           <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center shadow-glow mx-auto">
-            <TrendingUp className="w-5 h-5 text-primary-foreground" />
+            <img 
+              src={resolvedTheme === "dark" ? logoDark : logoLight} 
+              alt="PipTrace" 
+              className="h-6 object-contain"
+            />
           </div>
         )}
       </div>
