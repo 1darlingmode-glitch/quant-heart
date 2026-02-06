@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
@@ -13,12 +13,14 @@ import {
   Cell,
   PieChart,
   Pie,
+  ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import { useTrades } from "@/hooks/useTrades";
 import { getDay, getHours, startOfWeek, format, differenceInMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { cn } from "@/lib/utils";
-import { Globe, ChevronDown } from "lucide-react";
+import { Globe } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -56,6 +58,29 @@ const TIMEZONE_OPTIONS: TimezoneOption[] = [
   { value: "Australia/Sydney", label: "Sydney", abbr: "AEST" },
 ];
 
+// Trading sessions in UTC hours
+interface TradingSession {
+  name: string;
+  utcStart: number;
+  utcEnd: number;
+  color: string;
+  bgColor: string;
+}
+
+const TRADING_SESSIONS: TradingSession[] = [
+  { name: "Asian", utcStart: 0, utcEnd: 9, color: "hsl(47, 95%, 53%)", bgColor: "hsl(47, 95%, 53%)" },      // Tokyo 9AM-6PM JST = 0-9 UTC
+  { name: "London", utcStart: 8, utcEnd: 16, color: "hsl(217, 91%, 60%)", bgColor: "hsl(217, 91%, 60%)" },  // London 8AM-4PM GMT = 8-16 UTC
+  { name: "New York", utcStart: 13, utcEnd: 21, color: "hsl(142, 71%, 45%)", bgColor: "hsl(142, 71%, 45%)" }, // NY 9AM-5PM ET = 13-21 UTC (approx)
+];
+
+// Get timezone offset in hours from UTC
+const getTimezoneOffset = (timezone: string): number => {
+  const now = new Date();
+  const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
+  const tzDate = new Date(now.toLocaleString("en-US", { timeZone: timezone }));
+  return Math.round((tzDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60));
+};
+
 const FIELD_OPTIONS: FieldOption[] = [
   { id: "dayOfWeek", label: "Day of Week" },
   { id: "hoursOfDay", label: "Hours of Day" },
@@ -84,6 +109,40 @@ export function AnalyticsToggleView() {
   const { trades } = useTrades();
 
   const closedTrades = trades.filter((t) => t.status === "closed" && t.pnl !== null);
+
+  // Calculate session hours adjusted to selected timezone
+  const sessionRanges = useMemo(() => {
+    const offset = getTimezoneOffset(selectedTimezone);
+    return TRADING_SESSIONS.map((session) => {
+      let start = (session.utcStart + offset) % 24;
+      let end = (session.utcEnd + offset) % 24;
+      if (start < 0) start += 24;
+      if (end < 0) end += 24;
+      return {
+        ...session,
+        localStart: start,
+        localEnd: end,
+      };
+    });
+  }, [selectedTimezone]);
+
+  // Helper to get session for a given hour
+  const getSessionForHour = (hour: number): string | null => {
+    for (const session of sessionRanges) {
+      if (session.localStart <= session.localEnd) {
+        // Normal range (doesn't cross midnight)
+        if (hour >= session.localStart && hour < session.localEnd) {
+          return session.name;
+        }
+      } else {
+        // Crosses midnight
+        if (hour >= session.localStart || hour < session.localEnd) {
+          return session.name;
+        }
+      }
+    }
+    return null;
+  };
 
   // Calculate data based on active field
   const calculateData = () => {
@@ -146,15 +205,16 @@ export function AnalyticsToggleView() {
       hourMap.set(hour, existing);
     }
 
-    const performance: { name: string; pnl: number }[] = [];
-    const distribution: { name: string; value: number }[] = [];
+    const performance: { name: string; pnl: number; hour: number; session: string | null }[] = [];
+    const distribution: { name: string; value: number; hour: number; session: string | null }[] = [];
 
-    // Generate labels for all 24 hours
+    // Generate labels for all 24 hours with session info
     for (let i = 0; i < 24; i++) {
       const hourStr = i === 0 ? "12AM" : i < 12 ? `${i}AM` : i === 12 ? "12PM" : `${i - 12}PM`;
       const data = hourMap.get(i)!;
-      performance.push({ name: hourStr, pnl: Math.round(data.pnl * 100) / 100 });
-      distribution.push({ name: hourStr, value: data.count });
+      const session = getSessionForHour(i);
+      performance.push({ name: hourStr, pnl: Math.round(data.pnl * 100) / 100, hour: i, session });
+      distribution.push({ name: hourStr, value: data.count, hour: i, session });
     }
 
     return { performance, distribution };
@@ -431,6 +491,50 @@ export function AnalyticsToggleView() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    {/* Trading Session Reference Areas */}
+                    {sessionRanges.map((session) => {
+                      const startLabel = session.localStart === 0 ? "12AM" : session.localStart < 12 ? `${session.localStart}AM` : session.localStart === 12 ? "12PM" : `${session.localStart - 12}PM`;
+                      const endLabel = session.localEnd === 0 ? "12AM" : session.localEnd < 12 ? `${session.localEnd}AM` : session.localEnd === 12 ? "12PM" : `${session.localEnd - 12}PM`;
+                      
+                      if (session.localStart <= session.localEnd) {
+                        return (
+                          <ReferenceArea
+                            key={session.name}
+                            x1={startLabel}
+                            x2={endLabel}
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />
+                        );
+                      } else {
+                        // Session crosses midnight - render two areas
+                        return [
+                          <ReferenceArea
+                            key={`${session.name}-1`}
+                            x1={startLabel}
+                            x2="11PM"
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />,
+                          <ReferenceArea
+                            key={`${session.name}-2`}
+                            x1="12AM"
+                            x2={endLabel}
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />
+                        ];
+                      }
+                    })}
                     <XAxis
                       dataKey="name"
                       axisLine={false}
@@ -452,6 +556,11 @@ export function AnalyticsToggleView() {
                           return (
                             <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
                               <p className="font-medium mb-1">{label}</p>
+                              {d.session && (
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  Session: <span className="font-medium">{d.session}</span>
+                                </p>
+                              )}
                               <p className={cn("text-sm font-semibold", d.pnl >= 0 ? "text-profit" : "text-loss")}>
                                 P/L: {d.pnl >= 0 ? "+" : ""}${d.pnl.toLocaleString()}
                               </p>
@@ -584,7 +693,7 @@ export function AnalyticsToggleView() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-              ) : (
+              ) : activeField === "hoursOfDay" ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.distribution} barCategoryGap="15%">
                     <defs>
@@ -594,12 +703,106 @@ export function AnalyticsToggleView() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    {/* Trading Session Reference Areas */}
+                    {sessionRanges.map((session) => {
+                      const startLabel = session.localStart === 0 ? "12AM" : session.localStart < 12 ? `${session.localStart}AM` : session.localStart === 12 ? "12PM" : `${session.localStart - 12}PM`;
+                      const endLabel = session.localEnd === 0 ? "12AM" : session.localEnd < 12 ? `${session.localEnd}AM` : session.localEnd === 12 ? "12PM" : `${session.localEnd - 12}PM`;
+                      
+                      if (session.localStart <= session.localEnd) {
+                        return (
+                          <ReferenceArea
+                            key={session.name}
+                            x1={startLabel}
+                            x2={endLabel}
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />
+                        );
+                      } else {
+                        return [
+                          <ReferenceArea
+                            key={`${session.name}-1`}
+                            x1={startLabel}
+                            x2="11PM"
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />,
+                          <ReferenceArea
+                            key={`${session.name}-2`}
+                            x1="12AM"
+                            x2={endLabel}
+                            fill={session.bgColor}
+                            fillOpacity={0.08}
+                            stroke={session.color}
+                            strokeOpacity={0.3}
+                            strokeDasharray="3 3"
+                          />
+                        ];
+                      }
+                    })}
                     <XAxis
                       dataKey="name"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: activeField === "hoursOfDay" ? 10 : 11 }}
-                      interval={activeField === "hoursOfDay" ? 2 : 0}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                      interval={2}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                      width={40}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload;
+                          return (
+                            <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+                              <p className="font-medium mb-1">{label}</p>
+                              {d.session && (
+                                <p className="text-xs text-muted-foreground mb-1">
+                                  Session: <span className="font-medium">{d.session}</span>
+                                </p>
+                              )}
+                              <p className="text-sm text-chart-2">Trades: {d.value}</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar
+                      dataKey="value"
+                      fill="url(#distBarGradient)"
+                      radius={[6, 6, 0, 0]}
+                      animationDuration={1200}
+                      animationBegin={200}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.distribution} barCategoryGap="15%">
+                    <defs>
+                      <linearGradient id="distBarGradientDefault" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={1} />
+                        <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.5} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                      interval={0}
                     />
                     <YAxis
                       axisLine={false}
@@ -622,7 +825,7 @@ export function AnalyticsToggleView() {
                     />
                     <Bar
                       dataKey="value"
-                      fill="url(#distBarGradient)"
+                      fill="url(#distBarGradientDefault)"
                       radius={[6, 6, 0, 0]}
                       animationDuration={1200}
                       animationBegin={200}
@@ -631,6 +834,22 @@ export function AnalyticsToggleView() {
                 </ResponsiveContainer>
               )}
             </div>
+            {/* Session Legend for Hours of Day */}
+            {activeField === "hoursOfDay" && (
+              <div className="flex flex-wrap justify-center gap-4 mt-4">
+                {sessionRanges.map((session) => (
+                  <div key={session.name} className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-sm"
+                      style={{ backgroundColor: session.color, opacity: 0.7 }}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {session.name} ({session.localStart < 12 ? (session.localStart === 0 ? "12AM" : `${session.localStart}AM`) : (session.localStart === 12 ? "12PM" : `${session.localStart - 12}PM`)} - {session.localEnd < 12 ? (session.localEnd === 0 ? "12AM" : `${session.localEnd}AM`) : (session.localEnd === 12 ? "12PM" : `${session.localEnd - 12}PM`)})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             {/* Legend for Pie Chart */}
             {activeField === "instruments" && hasData && (
               <div className="flex flex-wrap justify-center gap-3 mt-4">
