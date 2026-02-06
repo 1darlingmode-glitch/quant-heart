@@ -12,10 +12,6 @@ import {
   FileText,
   Trash2,
   Eye,
-  Clock,
-  Target,
-  Trophy,
-  XCircle,
   BookOpen,
   DollarSign,
   ChevronDown,
@@ -96,14 +92,14 @@ function createChartData(periodTrades: Trade[]): MiniChartData[] {
 function MiniCumulativeChart({ data }: { data: MiniChartData[] }) {
   if (data.length === 0) {
     return (
-      <div className="h-[60px] flex items-center justify-center text-muted-foreground text-xs">
+      <div className="h-[40px] flex items-center justify-center text-muted-foreground text-[10px]">
         No data
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={60}>
+    <ResponsiveContainer width="100%" height={40}>
       <LineChart data={data}>
         <XAxis dataKey="trade" hide />
         <YAxis hide domain={['dataMin', 'dataMax']} />
@@ -123,14 +119,14 @@ function MiniCumulativeChart({ data }: { data: MiniChartData[] }) {
 function MiniPnLChart({ data }: { data: MiniChartData[] }) {
   if (data.length === 0) {
     return (
-      <div className="h-[60px] flex items-center justify-center text-muted-foreground text-xs">
+      <div className="h-[40px] flex items-center justify-center text-muted-foreground text-[10px]">
         No data
       </div>
     );
   }
 
   return (
-    <ResponsiveContainer width="100%" height={60}>
+    <ResponsiveContainer width="100%" height={40}>
       <LineChart data={data}>
         <XAxis dataKey="trade" hide />
         <YAxis hide domain={['dataMin', 'dataMax']} />
@@ -189,36 +185,35 @@ function JournalEntryCard({
       transition={{ delay: index * 0.05 }}
       className="bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all overflow-hidden"
     >
-      <div className="p-5">
+      <div className="p-4">
         {/* Header Row */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
             <div
               className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "w-10 h-10 rounded-lg flex items-center justify-center",
                 record.gross_pnl >= 0 ? "bg-profit/10" : "bg-loss/10"
               )}
             >
               {record.gross_pnl >= 0 ? (
-                <TrendingUp className="w-6 h-6 text-profit" />
+                <TrendingUp className="w-5 h-5 text-profit" />
               ) : (
-                <TrendingDown className="w-6 h-6 text-loss" />
+                <TrendingDown className="w-5 h-5 text-loss" />
               )}
             </div>
             <div>
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold">{record.period_label}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold">{record.period_label}</h3>
                 <Badge
                   variant="outline"
-                  className={cn("text-xs capitalize", periodTypeColors[record.period_type])}
+                  className={cn("text-[10px] capitalize", periodTypeColors[record.period_type])}
                 >
                   {record.period_type}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                {format(new Date(record.period_start), "MMM d, yyyy")} -{" "}
-                {format(new Date(record.period_end), "MMM d, yyyy")}
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {format(new Date(record.period_start), "MMM d")} - {format(new Date(record.period_end), "MMM d, yyyy")}
               </p>
             </div>
           </div>
@@ -226,175 +221,104 @@ function JournalEntryCard({
           <div className="text-right">
             <p
               className={cn(
-                "text-xl font-bold",
+                "text-lg font-bold",
                 record.gross_pnl >= 0 ? "text-profit" : "text-loss"
               )}
             >
               {formatCurrency(record.gross_pnl)}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {record.win_rate.toFixed(1)}% win rate
             </p>
           </div>
         </div>
 
-        {/* Mini Charts */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-secondary/30 rounded-lg p-2 border border-border">
-            <div className="flex items-center gap-1 mb-1">
-              <TrendingUp className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-medium text-muted-foreground">Cumulative P/L</span>
+        {/* Compact Layout: Stats + Charts */}
+        <div className="flex gap-3 mb-3">
+          {/* Stats Grid - Left side */}
+          <div className="flex-1 grid grid-cols-4 gap-2 p-2 bg-secondary/30 rounded-lg">
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">Trades</p>
+              <p className="text-sm font-medium">{record.total_trades}</p>
             </div>
-            <MiniCumulativeChart data={chartData} />
-          </div>
-          <div className="bg-secondary/30 rounded-lg p-2 border border-border">
-            <div className="flex items-center gap-1 mb-1">
-              <DollarSign className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-medium text-muted-foreground">Trade P/L</span>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">Winners</p>
+              <p className="text-sm font-medium text-profit">{record.winners}</p>
             </div>
-            <MiniPnLChart data={chartData} />
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-secondary/30 rounded-lg mb-4">
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Trades</p>
-              <p className="font-medium">{record.total_trades}</p>
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">Losers</p>
+              <p className="text-sm font-medium text-loss">{record.losers}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-profit" />
-            <div>
-              <p className="text-xs text-muted-foreground">Winners</p>
-              <p className="font-medium text-profit">{record.winners}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <XCircle className="w-4 h-4 text-loss" />
-            <div>
-              <p className="text-xs text-muted-foreground">Losers</p>
-              <p className="font-medium text-loss">{record.losers}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">Saved</p>
-              <p className="font-medium text-xs">
-                {format(new Date(record.created_at), "MMM d, HH:mm")}
+            <div className="text-center">
+              <p className="text-[10px] text-muted-foreground">Saved</p>
+              <p className="text-[10px] font-medium">
+                {format(new Date(record.created_at), "MMM d")}
               </p>
             </div>
           </div>
+
+          {/* Mini Charts - Right side, narrower */}
+          <div className="w-[180px] flex gap-2">
+            <div className="flex-1 bg-secondary/30 rounded-lg p-1.5 border border-border">
+              <div className="flex items-center gap-1 mb-0.5">
+                <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                <span className="text-[8px] font-medium text-muted-foreground">Cumulative</span>
+              </div>
+              <MiniCumulativeChart data={chartData} />
+            </div>
+            <div className="flex-1 bg-secondary/30 rounded-lg p-1.5 border border-border">
+              <div className="flex items-center gap-1 mb-0.5">
+                <DollarSign className="h-2.5 w-2.5 text-primary" />
+                <span className="text-[8px] font-medium text-muted-foreground">P/L</span>
+              </div>
+              <MiniPnLChart data={chartData} />
+            </div>
+          </div>
         </div>
 
-        {/* Notes Preview */}
-        {record.notes && (
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
-              Notes
-            </p>
-            <p className="text-sm line-clamp-2">{record.notes}</p>
-          </div>
-        )}
-
-        {/* Trades Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowTrades(!showTrades)}
-          className="w-full mb-3 text-muted-foreground hover:text-foreground"
-        >
-          {showTrades ? (
-            <>
-              <ChevronUp className="w-4 h-4 mr-2" />
-              Hide Trades ({periodTrades.length})
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4 mr-2" />
-              View All Trades ({periodTrades.length})
-            </>
-          )}
-        </Button>
-
-        {/* Trades Table (Collapsible) */}
-        {showTrades && (
-          <div className="rounded-lg border border-border overflow-hidden mb-4">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-secondary/50">
-                  <TableHead className="text-xs">Time</TableHead>
-                  <TableHead className="text-xs">Symbol</TableHead>
-                  <TableHead className="text-xs">Side</TableHead>
-                  <TableHead className="text-xs text-right">P/L</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {periodTrades.length > 0 ? (
-                  [...periodTrades]
-                    .sort((a, b) => new Date(a.exit_date!).getTime() - new Date(b.exit_date!).getTime())
-                    .map((trade) => (
-                      <TableRow key={trade.id} className="hover:bg-secondary/30">
-                        <TableCell className="text-xs">
-                          {format(new Date(trade.entry_date), "MMM d, HH:mm")}
-                        </TableCell>
-                        <TableCell className="text-xs font-medium">{trade.symbol}</TableCell>
-                        <TableCell className="text-xs">
-                          <span
-                            className={cn(
-                              "px-2 py-0.5 rounded text-xs font-medium",
-                              trade.trade_type === "long"
-                                ? "bg-profit/20 text-profit"
-                                : "bg-loss/20 text-loss"
-                            )}
-                          >
-                            {trade.trade_type.toUpperCase()}
-                          </span>
-                        </TableCell>
-                        <TableCell
-                          className={cn(
-                            "text-xs text-right font-medium",
-                            (trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"
-                          )}
-                        >
-                          {formatCurrency(trade.pnl || 0)}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6 text-xs">
-                      No trades found for this period
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="flex items-center gap-3 text-muted-foreground">
             {record.screenshots && record.screenshots.length > 0 && (
               <div className="flex items-center gap-1 text-xs">
-                <Image className="w-3.5 h-3.5" />
-                <span>{record.screenshots.length} screenshot(s)</span>
+                <Image className="w-3 h-3" />
+                <span>{record.screenshots.length}</span>
               </div>
             )}
+            {record.notes && (
+              <div className="flex items-center gap-1 text-xs">
+                <FileText className="w-3 h-3" />
+                <span>Notes</span>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTrades(!showTrades)}
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showTrades ? (
+                <>
+                  <ChevronUp className="w-3 h-3 mr-1" />
+                  Hide ({periodTrades.length})
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3 mr-1" />
+                  Trades ({periodTrades.length})
+                </>
+              )}
+            </Button>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onView}>
-              <Eye className="w-4 h-4 mr-1" />
+            <Button variant="outline" size="sm" onClick={onView} className="h-7 text-xs">
+              <Eye className="w-3 h-3 mr-1" />
               View
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-loss hover:text-loss">
-                  <Trash2 className="w-4 h-4" />
+                <Button variant="outline" size="sm" className="h-7 px-2 text-loss hover:text-loss">
+                  <Trash2 className="w-3 h-3" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -414,6 +338,62 @@ function JournalEntryCard({
             </AlertDialog>
           </div>
         </div>
+
+        {/* Trades Table (Collapsible) */}
+        {showTrades && (
+          <div className="rounded-lg border border-border overflow-hidden mt-3">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50">
+                  <TableHead className="text-xs py-2">Time</TableHead>
+                  <TableHead className="text-xs py-2">Symbol</TableHead>
+                  <TableHead className="text-xs py-2">Side</TableHead>
+                  <TableHead className="text-xs py-2 text-right">P/L</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {periodTrades.length > 0 ? (
+                  [...periodTrades]
+                    .sort((a, b) => new Date(a.exit_date!).getTime() - new Date(b.exit_date!).getTime())
+                    .map((trade) => (
+                      <TableRow key={trade.id} className="hover:bg-secondary/30">
+                        <TableCell className="text-xs py-1.5">
+                          {format(new Date(trade.entry_date), "MMM d, HH:mm")}
+                        </TableCell>
+                        <TableCell className="text-xs py-1.5 font-medium">{trade.symbol}</TableCell>
+                        <TableCell className="text-xs py-1.5">
+                          <span
+                            className={cn(
+                              "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                              trade.trade_type === "long"
+                                ? "bg-profit/20 text-profit"
+                                : "bg-loss/20 text-loss"
+                            )}
+                          >
+                            {trade.trade_type.toUpperCase()}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-xs py-1.5 text-right font-medium",
+                            (trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"
+                          )}
+                        >
+                          {formatCurrency(trade.pnl || 0)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-4 text-xs">
+                      No trades found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </motion.div>
   );
