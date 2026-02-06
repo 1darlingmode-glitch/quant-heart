@@ -17,6 +17,9 @@ import {
   Trophy,
   XCircle,
   BookOpen,
+  DollarSign,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +41,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodRecord, usePeriodRecords } from "@/hooks/usePeriodRecords";
+import { useTrades, Trade } from "@/hooks/useTrades";
 
 const periodTypeColors: Record<string, string> = {
   daily: "bg-chart-1/10 text-chart-1 border-chart-1/20",
@@ -49,8 +71,357 @@ const periodTypeColors: Record<string, string> = {
   yearly: "bg-chart-4/10 text-chart-4 border-chart-4/20",
 };
 
+interface MiniChartData {
+  trade: number;
+  pnl: number;
+  cumulative: number;
+}
+
+function createChartData(periodTrades: Trade[]): MiniChartData[] {
+  const sortedTrades = [...periodTrades].sort(
+    (a, b) => new Date(a.exit_date!).getTime() - new Date(b.exit_date!).getTime()
+  );
+
+  let cumulative = 0;
+  return sortedTrades.map((trade, index) => {
+    cumulative += trade.pnl || 0;
+    return {
+      trade: index + 1,
+      pnl: trade.pnl || 0,
+      cumulative,
+    };
+  });
+}
+
+function MiniCumulativeChart({ data }: { data: MiniChartData[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="h-[60px] flex items-center justify-center text-muted-foreground text-xs">
+        No data
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={60}>
+      <LineChart data={data}>
+        <XAxis dataKey="trade" hide />
+        <YAxis hide domain={['dataMin', 'dataMax']} />
+        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="2 2" strokeOpacity={0.3} />
+        <Line
+          type="monotone"
+          dataKey="cumulative"
+          stroke="hsl(var(--primary))"
+          strokeWidth={1.5}
+          dot={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function MiniPnLChart({ data }: { data: MiniChartData[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="h-[60px] flex items-center justify-center text-muted-foreground text-xs">
+        No data
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={60}>
+      <LineChart data={data}>
+        <XAxis dataKey="trade" hide />
+        <YAxis hide domain={['dataMin', 'dataMax']} />
+        <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="2 2" strokeOpacity={0.3} />
+        <Line
+          type="monotone"
+          dataKey="pnl"
+          stroke="hsl(var(--chart-1))"
+          strokeWidth={1.5}
+          dot={(props) => {
+            const { cx, cy, payload } = props;
+            const color = (payload.pnl || 0) >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))";
+            return <circle cx={cx} cy={cy} r={2} fill={color} />;
+          }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+function JournalEntryCard({
+  record,
+  trades,
+  onView,
+  onDelete,
+  index,
+}: {
+  record: PeriodRecord;
+  trades: Trade[];
+  onView: () => void;
+  onDelete: () => void;
+  index: number;
+}) {
+  const [showTrades, setShowTrades] = useState(false);
+
+  // Filter trades for this period
+  const periodTrades = trades.filter((t) => {
+    if (!t.exit_date || t.status !== "closed") return false;
+    const exitDate = new Date(t.exit_date);
+    const periodStart = new Date(record.period_start);
+    const periodEnd = new Date(record.period_end);
+    return exitDate >= periodStart && exitDate <= periodEnd;
+  });
+
+  const chartData = createChartData(periodTrades);
+
+  const formatCurrency = (value: number) => {
+    const prefix = value >= 0 ? "+" : "";
+    return `${prefix}$${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      className="bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all overflow-hidden"
+    >
+      <div className="p-5">
+        {/* Header Row */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div
+              className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center",
+                record.gross_pnl >= 0 ? "bg-profit/10" : "bg-loss/10"
+              )}
+            >
+              {record.gross_pnl >= 0 ? (
+                <TrendingUp className="w-6 h-6 text-profit" />
+              ) : (
+                <TrendingDown className="w-6 h-6 text-loss" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold">{record.period_label}</h3>
+                <Badge
+                  variant="outline"
+                  className={cn("text-xs capitalize", periodTypeColors[record.period_type])}
+                >
+                  {record.period_type}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {format(new Date(record.period_start), "MMM d, yyyy")} -{" "}
+                {format(new Date(record.period_end), "MMM d, yyyy")}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p
+              className={cn(
+                "text-xl font-bold",
+                record.gross_pnl >= 0 ? "text-profit" : "text-loss"
+              )}
+            >
+              {formatCurrency(record.gross_pnl)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {record.win_rate.toFixed(1)}% win rate
+            </p>
+          </div>
+        </div>
+
+        {/* Mini Charts */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-secondary/30 rounded-lg p-2 border border-border">
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingUp className="h-3 w-3 text-primary" />
+              <span className="text-[10px] font-medium text-muted-foreground">Cumulative P/L</span>
+            </div>
+            <MiniCumulativeChart data={chartData} />
+          </div>
+          <div className="bg-secondary/30 rounded-lg p-2 border border-border">
+            <div className="flex items-center gap-1 mb-1">
+              <DollarSign className="h-3 w-3 text-primary" />
+              <span className="text-[10px] font-medium text-muted-foreground">Trade P/L</span>
+            </div>
+            <MiniPnLChart data={chartData} />
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-secondary/30 rounded-lg mb-4">
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Trades</p>
+              <p className="font-medium">{record.total_trades}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-profit" />
+            <div>
+              <p className="text-xs text-muted-foreground">Winners</p>
+              <p className="font-medium text-profit">{record.winners}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-loss" />
+            <div>
+              <p className="text-xs text-muted-foreground">Losers</p>
+              <p className="font-medium text-loss">{record.losers}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Saved</p>
+              <p className="font-medium text-xs">
+                {format(new Date(record.created_at), "MMM d, HH:mm")}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes Preview */}
+        {record.notes && (
+          <div className="mb-4">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
+              Notes
+            </p>
+            <p className="text-sm line-clamp-2">{record.notes}</p>
+          </div>
+        )}
+
+        {/* Trades Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowTrades(!showTrades)}
+          className="w-full mb-3 text-muted-foreground hover:text-foreground"
+        >
+          {showTrades ? (
+            <>
+              <ChevronUp className="w-4 h-4 mr-2" />
+              Hide Trades ({periodTrades.length})
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-4 h-4 mr-2" />
+              View All Trades ({periodTrades.length})
+            </>
+          )}
+        </Button>
+
+        {/* Trades Table (Collapsible) */}
+        {showTrades && (
+          <div className="rounded-lg border border-border overflow-hidden mb-4">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50">
+                  <TableHead className="text-xs">Time</TableHead>
+                  <TableHead className="text-xs">Symbol</TableHead>
+                  <TableHead className="text-xs">Side</TableHead>
+                  <TableHead className="text-xs text-right">P/L</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {periodTrades.length > 0 ? (
+                  [...periodTrades]
+                    .sort((a, b) => new Date(a.exit_date!).getTime() - new Date(b.exit_date!).getTime())
+                    .map((trade) => (
+                      <TableRow key={trade.id} className="hover:bg-secondary/30">
+                        <TableCell className="text-xs">
+                          {format(new Date(trade.entry_date), "MMM d, HH:mm")}
+                        </TableCell>
+                        <TableCell className="text-xs font-medium">{trade.symbol}</TableCell>
+                        <TableCell className="text-xs">
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded text-xs font-medium",
+                              trade.trade_type === "long"
+                                ? "bg-profit/20 text-profit"
+                                : "bg-loss/20 text-loss"
+                            )}
+                          >
+                            {trade.trade_type.toUpperCase()}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-xs text-right font-medium",
+                            (trade.pnl || 0) >= 0 ? "text-profit" : "text-loss"
+                          )}
+                        >
+                          {formatCurrency(trade.pnl || 0)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6 text-xs">
+                      No trades found for this period
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            {record.screenshots && record.screenshots.length > 0 && (
+              <div className="flex items-center gap-1 text-xs">
+                <Image className="w-3.5 h-3.5" />
+                <span>{record.screenshots.length} screenshot(s)</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onView}>
+              <Eye className="w-4 h-4 mr-1" />
+              View
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-loss hover:text-loss">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Record</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this journal entry? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete} className="bg-loss hover:bg-loss/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function JournalEntryList({ searchQuery }: { searchQuery: string }) {
   const { records, isLoading, deleteRecord } = usePeriodRecords();
+  const { trades } = useTrades();
   const [selectedRecord, setSelectedRecord] = useState<PeriodRecord | null>(null);
 
   const formatCurrency = (value: number) => {
@@ -69,7 +440,7 @@ function JournalEntryList({ searchQuery }: { searchQuery: string }) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-xl" />
+          <Skeleton key={i} className="h-64 w-full rounded-xl" />
         ))}
       </div>
     );
@@ -93,153 +464,14 @@ function JournalEntryList({ searchQuery }: { searchQuery: string }) {
     <>
       <div className="space-y-4">
         {filteredRecords.map((record, index) => (
-          <motion.div
+          <JournalEntryCard
             key={record.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all overflow-hidden"
-          >
-            <div className="p-5">
-              {/* Header Row */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center",
-                      record.gross_pnl >= 0 ? "bg-profit/10" : "bg-loss/10"
-                    )}
-                  >
-                    {record.gross_pnl >= 0 ? (
-                      <TrendingUp className="w-6 h-6 text-profit" />
-                    ) : (
-                      <TrendingDown className="w-6 h-6 text-loss" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold">{record.period_label}</h3>
-                      <Badge
-                        variant="outline"
-                        className={cn("text-xs capitalize", periodTypeColors[record.period_type])}
-                      >
-                        {record.period_type}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {format(new Date(record.period_start), "MMM d, yyyy")} -{" "}
-                      {format(new Date(record.period_end), "MMM d, yyyy")}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <p
-                    className={cn(
-                      "text-xl font-bold",
-                      record.gross_pnl >= 0 ? "text-profit" : "text-loss"
-                    )}
-                  >
-                    {formatCurrency(record.gross_pnl)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {record.win_rate.toFixed(1)}% win rate
-                  </p>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-secondary/30 rounded-lg mb-4">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Trades</p>
-                    <p className="font-medium">{record.total_trades}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-profit" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Winners</p>
-                    <p className="font-medium text-profit">{record.winners}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <XCircle className="w-4 h-4 text-loss" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Losers</p>
-                    <p className="font-medium text-loss">{record.losers}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Saved</p>
-                    <p className="font-medium text-xs">
-                      {format(new Date(record.created_at), "MMM d, HH:mm")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Notes Preview */}
-              {record.notes && (
-                <div className="mb-4">
-                  <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">
-                    Notes
-                  </p>
-                  <p className="text-sm line-clamp-2">{record.notes}</p>
-                </div>
-              )}
-
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {record.screenshots && record.screenshots.length > 0 && (
-                    <div className="flex items-center gap-1 text-xs">
-                      <Image className="w-3.5 h-3.5" />
-                      <span>{record.screenshots.length} screenshot(s)</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedRecord(record)}
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    View
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" className="text-loss hover:text-loss">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Record</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this journal entry? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteRecord.mutate(record.id)}
-                          className="bg-loss hover:bg-loss/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            record={record}
+            trades={trades}
+            onView={() => setSelectedRecord(record)}
+            onDelete={() => deleteRecord.mutate(record.id)}
+            index={index}
+          />
         ))}
       </div>
 
