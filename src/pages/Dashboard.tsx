@@ -148,7 +148,7 @@ export default function Dashboard() {
         <div className="space-y-6">
           <DailyPnLChart />
           <PerformanceByHour delay={0.45} />
-          <TradingScore delay={0.5} />
+          <TradingScore trades={trades} delay={0.5} />
           <PerformanceRing 
             winRate={stats.winRate} 
             wins={stats.winningTrades} 
