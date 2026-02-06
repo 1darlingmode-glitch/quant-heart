@@ -26,14 +26,14 @@ interface MiniRingProps {
   size?: number;
 }
 
-function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
-  const strokeWidth = 4;
+function MiniRing({ progress, variant, size = 36 }: MiniRingProps) {
+  const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
   const strokeDashoffset = circumference - (clampedProgress / 100) * circumference;
 
-  const getColor = () => {
+  const getProgressColor = () => {
     switch (variant) {
       case "profit":
         return "stroke-profit";
@@ -41,6 +41,17 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
         return "stroke-loss";
       default:
         return "stroke-primary";
+    }
+  };
+
+  const getBackgroundColor = () => {
+    switch (variant) {
+      case "profit":
+        return "text-profit/20";
+      case "loss":
+        return "text-loss/20";
+      default:
+        return "text-muted/30";
     }
   };
 
@@ -52,7 +63,7 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
         viewBox={`0 0 ${size} ${size}`}
         className="transform -rotate-90"
       >
-        {/* Background circle */}
+        {/* Background circle - colored based on variant */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -60,7 +71,7 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-muted/30"
+          className={getBackgroundColor()}
         />
         {/* Progress circle */}
         <motion.circle
@@ -70,7 +81,7 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
           fill="none"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          className={getColor()}
+          className={getProgressColor()}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
           transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
@@ -82,7 +93,7 @@ function MiniRing({ progress, variant, size = 44 }: MiniRingProps) {
       {/* Center percentage */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className={cn(
-          "text-[10px] font-bold",
+          "text-[8px] font-bold",
           variant === "profit" && "text-profit",
           variant === "loss" && "text-loss",
           variant === "default" && "text-primary"
@@ -123,13 +134,13 @@ export function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay, ease: "easeOut" }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-xl border border-border p-5 shadow-card hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className="bg-card rounded-lg border border-border p-3 shadow-card hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-2">
         <div
           className={cn(
-            "w-11 h-11 rounded-lg flex items-center justify-center",
+            "w-8 h-8 rounded-md flex items-center justify-center",
             variant === "profit" && "bg-profit/10",
             variant === "loss" && "bg-loss/10",
             variant === "default" && "bg-primary/10"
@@ -137,7 +148,7 @@ export function StatCard({
         >
           <Icon
             className={cn(
-              "w-5 h-5",
+              "w-4 h-4",
               variant === "profit" && "text-profit",
               variant === "loss" && "text-loss",
               variant === "default" && "text-primary"
@@ -149,9 +160,9 @@ export function StatCard({
         )}
       </div>
 
-      <p className="text-sm text-muted-foreground mb-1">{title}</p>
+      <p className="text-xs text-muted-foreground mb-0.5">{title}</p>
       <p className={cn(
-        "text-2xl font-bold",
+        "text-lg font-bold",
         useThemeColor 
           ? "text-foreground" 
           : variant === "profit" 
@@ -163,7 +174,7 @@ export function StatCard({
         {value}
       </p>
       {changeLabel && (
-        <p className="text-xs text-muted-foreground mt-1">{changeLabel}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5">{changeLabel}</p>
       )}
     </motion.div>
   );
