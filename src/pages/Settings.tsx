@@ -1,19 +1,19 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  User,
   Bell,
   Palette,
   Shield,
   Link,
-  CreditCard,
-  Moon,
-  Sun,
-  ChevronRight,
   Database,
   AlertTriangle,
   Loader2,
+  Moon,
+  Sun,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +22,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useResetTracking } from "@/hooks/useTrades";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,24 +35,76 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  ChevronRight,
+} from "lucide-react";
 
 const settingsSections = [
-  { id: "profile", label: "Profile", icon: User },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "integrations", label: "Integrations", icon: Link },
   { id: "data", label: "Data & Reset", icon: Database },
   { id: "security", label: "Security", icon: Shield },
-  { id: "billing", label: "Billing", icon: CreditCard },
 ];
 
+interface NotificationSettings {
+  dailyReminder: boolean;
+  performanceMilestones: boolean;
+  riskAlerts: boolean;
+  tradeSyncNotifications: boolean;
+}
+
+interface AppearanceSettings {
+  compactView: boolean;
+  showAnimations: boolean;
+}
+
 export default function Settings() {
-  const [activeSection, setActiveSection] = useState("profile");
+  const { user } = useAuth();
+  const [activeSection, setActiveSection] = useState("notifications");
   const [isDark, setIsDark] = useState(() =>
     document.documentElement.classList.contains("dark")
   );
   const [isResetting, setIsResetting] = useState(false);
   const { resetAllData } = useResetTracking();
+
+  // Notification settings state
+  const [notifications, setNotifications] = useState<NotificationSettings>(() => {
+    const saved = localStorage.getItem("notificationSettings");
+    return saved ? JSON.parse(saved) : {
+      dailyReminder: true,
+      performanceMilestones: true,
+      riskAlerts: true,
+      tradeSyncNotifications: false,
+    };
+  });
+
+  // Appearance settings state
+  const [appearance, setAppearance] = useState<AppearanceSettings>(() => {
+    const saved = localStorage.getItem("appearanceSettings");
+    return saved ? JSON.parse(saved) : {
+      compactView: false,
+      showAnimations: true,
+    };
+  });
+
+  // Security state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Save notification settings to localStorage
+  useEffect(() => {
+    localStorage.setItem("notificationSettings", JSON.stringify(notifications));
+  }, [notifications]);
+
+  // Save appearance settings to localStorage
+  useEffect(() => {
+    localStorage.setItem("appearanceSettings", JSON.stringify(appearance));
+  }, [appearance]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -67,6 +121,51 @@ export default function Settings() {
       toast.error("Failed to reset tracking data");
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleNotificationChange = (key: keyof NotificationSettings) => {
+    setNotifications((prev) => {
+      const newValue = !prev[key];
+      toast.success(`${key === 'dailyReminder' ? 'Daily reminder' : key === 'performanceMilestones' ? 'Performance milestones' : key === 'riskAlerts' ? 'Risk alerts' : 'Trade sync notifications'} ${newValue ? 'enabled' : 'disabled'}`);
+      return { ...prev, [key]: newValue };
+    });
+  };
+
+  const handleAppearanceChange = (key: keyof AppearanceSettings) => {
+    setAppearance((prev) => {
+      const newValue = !prev[key];
+      toast.success(`${key === 'compactView' ? 'Compact view' : 'Animations'} ${newValue ? 'enabled' : 'disabled'}`);
+      return { ...prev, [key]: newValue };
+    });
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update password");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -119,55 +218,6 @@ export default function Settings() {
           transition={{ delay: 0.2 }}
           className="lg:col-span-3"
         >
-          {activeSection === "profile" && (
-            <div className="bg-card rounded-xl border border-border shadow-card p-6">
-              <h2 className="text-xl font-semibold mb-6">Profile Settings</h2>
-              
-              <div className="flex items-center gap-6 mb-8 pb-8 border-b border-border">
-                <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">
-                  JD
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">John Doe</h3>
-                  <p className="text-muted-foreground text-sm">Pro Trader</p>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    Change Photo
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid gap-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>First Name</Label>
-                    <Input defaultValue="John" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Last Name</Label>
-                    <Input defaultValue="Doe" />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" defaultValue="john.doe@example.com" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Trading Experience</Label>
-                  <Input defaultValue="5 years" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Preferred Markets</Label>
-                  <Input defaultValue="Stocks, Forex, Futures" />
-                </div>
-
-                <Button className="w-fit gradient-primary">Save Changes</Button>
-              </div>
-            </div>
-          )}
-
           {activeSection === "appearance" && (
             <div className="bg-card rounded-xl border border-border shadow-card p-6">
               <h2 className="text-xl font-semibold mb-6">Appearance</h2>
@@ -197,7 +247,10 @@ export default function Settings() {
                       Show more data in less space
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={appearance.compactView} 
+                    onCheckedChange={() => handleAppearanceChange('compactView')} 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
@@ -207,7 +260,10 @@ export default function Settings() {
                       Enable smooth transitions and effects
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={appearance.showAnimations} 
+                    onCheckedChange={() => handleAppearanceChange('showAnimations')} 
+                  />
                 </div>
               </div>
             </div>
@@ -225,7 +281,10 @@ export default function Settings() {
                       Get reminded to journal at market close
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={notifications.dailyReminder} 
+                    onCheckedChange={() => handleNotificationChange('dailyReminder')} 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
@@ -235,7 +294,10 @@ export default function Settings() {
                       Celebrate when you hit new highs
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={notifications.performanceMilestones} 
+                    onCheckedChange={() => handleNotificationChange('performanceMilestones')} 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
@@ -245,7 +307,10 @@ export default function Settings() {
                       Get alerted when drawdown exceeds limits
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={notifications.riskAlerts} 
+                    onCheckedChange={() => handleNotificationChange('riskAlerts')} 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
@@ -255,7 +320,10 @@ export default function Settings() {
                       Notify when new trades are imported
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={notifications.tradeSyncNotifications} 
+                    onCheckedChange={() => handleNotificationChange('tradeSyncNotifications')} 
+                  />
                 </div>
               </div>
             </div>
@@ -375,12 +443,138 @@ export default function Settings() {
             </div>
           )}
 
-          {(activeSection === "security" || activeSection === "billing") && (
+          {activeSection === "security" && (
             <div className="bg-card rounded-xl border border-border shadow-card p-6">
-              <h2 className="text-xl font-semibold mb-6 capitalize">{activeSection}</h2>
-              <p className="text-muted-foreground">
-                Coming soon. This feature is under development.
-              </p>
+              <h2 className="text-xl font-semibold mb-6">Security Settings</h2>
+
+              <div className="space-y-6">
+                {/* Account Info */}
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Account Email</p>
+                      <p className="text-sm text-muted-foreground">{user?.email || "Not available"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Change Password */}
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Lock className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <p className="font-medium">Change Password</p>
+                        <p className="text-sm text-muted-foreground">
+                          Update your account password
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="current-password">Current Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="current-password"
+                              type={showCurrentPassword ? "text" : "password"}
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              placeholder="Enter current password"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            >
+                              {showCurrentPassword ? (
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="new-password">New Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="new-password"
+                              type={showNewPassword ? "text" : "password"}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Enter new password"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                            >
+                              {showNewPassword ? (
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="w-4 h-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="confirm-password">Confirm New Password</Label>
+                          <Input
+                            id="confirm-password"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
+                          />
+                        </div>
+
+                        <Button
+                          onClick={handleChangePassword}
+                          disabled={isChangingPassword || !newPassword || !confirmPassword}
+                          className="gradient-primary"
+                        >
+                          {isChangingPassword ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Updating...
+                            </>
+                          ) : (
+                            "Update Password"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Last Sign In */}
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Last Sign In</p>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.last_sign_in_at 
+                          ? new Date(user.last_sign_in_at).toLocaleString() 
+                          : "Not available"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </motion.div>
