@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
-import { Link, TrendingUp, DollarSign, Wallet, Plus } from "lucide-react";
+import { Link, TrendingUp, DollarSign, Wallet, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,11 +12,25 @@ import { ManageAccountDialog } from "@/components/accounts/ManageAccountDialog";
 import { formatDistanceToNow } from "date-fns";
 
 export default function Accounts() {
-  const { accounts, isLoading } = useBrokerAccounts();
+  const { accounts, isLoading, syncAccount, syncAllAccounts } = useBrokerAccounts();
   const [selectedAccount, setSelectedAccount] = useState<BrokerAccount | null>(null);
+  const [syncingAccountId, setSyncingAccountId] = useState<string | null>(null);
 
   const totalBalance = accounts.reduce((acc, a) => acc + (a.balance || 0), 0);
   const activeAccounts = accounts.filter((a) => a.status === "active");
+
+  const handleSyncAccount = async (account: BrokerAccount) => {
+    setSyncingAccountId(account.id);
+    try {
+      await syncAccount.mutateAsync(account);
+    } finally {
+      setSyncingAccountId(null);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    await syncAllAccounts.mutateAsync();
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -50,7 +64,19 @@ export default function Accounts() {
             Manage your connected broker accounts
           </p>
         </div>
-        <AddAccountDialog />
+        <div className="flex gap-2">
+          {accounts.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleSyncAll}
+              disabled={syncAllAccounts.isPending || activeAccounts.length === 0}
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", syncAllAccounts.isPending && "animate-spin")} />
+              {syncAllAccounts.isPending ? "Syncing..." : "Sync All"}
+            </Button>
+          )}
+          <AddAccountDialog />
+        </div>
       </motion.div>
 
       {/* Summary Cards */}
@@ -159,14 +185,24 @@ export default function Accounts() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-4 md:gap-8">
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Balance</p>
                     <p className="text-xl font-bold">${(account.balance || 0).toLocaleString()}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedAccount(account)}>
-                    Manage
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleSyncAccount(account)}
+                      disabled={syncingAccountId === account.id || account.status !== "active"}
+                    >
+                      <RefreshCw className={cn("w-4 h-4", syncingAccountId === account.id && "animate-spin")} />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedAccount(account)}>
+                      Manage
+                    </Button>
+                  </div>
                 </div>
               </div>
             </motion.div>

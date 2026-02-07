@@ -63,6 +63,7 @@ export function useBrokerAccounts() {
           broker: input.broker,
           balance: input.balance || 0,
           status: "active",
+          last_sync: new Date().toISOString(),
         })
         .select()
         .single();
@@ -146,6 +147,94 @@ export function useBrokerAccounts() {
     },
   });
 
+  const syncAccount = useMutation({
+    mutationFn: async (account: BrokerAccount) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Simulate balance change (±0.5% to ±2% fluctuation)
+      const currentBalance = account.balance || 0;
+      const changePercent = (Math.random() - 0.5) * 0.04; // -2% to +2%
+      const newBalance = Math.round((currentBalance * (1 + changePercent)) * 100) / 100;
+
+      const { data, error } = await supabase
+        .from("broker_accounts")
+        .update({
+          balance: newBalance,
+          last_sync: new Date().toISOString(),
+          status: "active",
+        })
+        .eq("id", account.id)
+        .eq("user_id", user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { account: data, change: newBalance - currentBalance };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["broker_accounts", user?.id] });
+      const changeText = result.change >= 0 
+        ? `+$${result.change.toFixed(2)}` 
+        : `-$${Math.abs(result.change).toFixed(2)}`;
+      toast({
+        title: "Account synced",
+        description: `Balance updated (${changeText})`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const syncAllAccounts = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      
+      const accounts = accountsQuery.data || [];
+      const activeAccounts = accounts.filter(a => a.status === "active");
+      
+      const results = await Promise.all(
+        activeAccounts.map(async (account) => {
+          const currentBalance = account.balance || 0;
+          const changePercent = (Math.random() - 0.5) * 0.04;
+          const newBalance = Math.round((currentBalance * (1 + changePercent)) * 100) / 100;
+
+          const { error } = await supabase
+            .from("broker_accounts")
+            .update({
+              balance: newBalance,
+              last_sync: new Date().toISOString(),
+            })
+            .eq("id", account.id)
+            .eq("user_id", user.id);
+
+          if (error) throw error;
+          return { name: account.name, change: newBalance - currentBalance };
+        })
+      );
+
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ["broker_accounts", user?.id] });
+      toast({
+        title: "All accounts synced",
+        description: `Updated ${results.length} account${results.length !== 1 ? "s" : ""}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     accounts: accountsQuery.data || [],
     isLoading: accountsQuery.isLoading,
@@ -153,5 +242,7 @@ export function useBrokerAccounts() {
     createAccount,
     updateAccount,
     deleteAccount,
+    syncAccount,
+    syncAllAccounts,
   };
 }
