@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useBrokerAccounts, BrokerAccount } from "@/hooks/useBrokerAccounts";
 import { AddAccountDialog } from "@/components/accounts/AddAccountDialog";
+import { ConnectMT5Dialog } from "@/components/accounts/ConnectMT5Dialog";
 import { ManageAccountDialog } from "@/components/accounts/ManageAccountDialog";
 import { formatDistanceToNow } from "date-fns";
 
@@ -75,6 +76,7 @@ export default function Accounts() {
               {syncAllAccounts.isPending ? "Syncing..." : "Sync All"}
             </Button>
           )}
+          <ConnectMT5Dialog />
           <AddAccountDialog />
         </div>
       </motion.div>
