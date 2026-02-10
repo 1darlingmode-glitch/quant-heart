@@ -123,13 +123,13 @@
     --input: 0 0% 32%;
     --ring: 158 64% 51%;
 
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 0 0% 98%;
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 158 64% 51%;
-    --sidebar-primary-foreground: 165 91% 9%;
-    --sidebar-accent: 172 66% 50%;
-    --sidebar-accent-foreground: 178 84% 10%;
-    --sidebar-border: 0 0% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 14%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 222 30% 16%;
     --sidebar-ring: 158 64% 51%;
 
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 65%) 0%, hsl(217 91% 75%) 100%);
