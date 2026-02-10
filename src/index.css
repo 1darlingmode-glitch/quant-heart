@@ -58,13 +58,13 @@
     --chart-5: 0 0% 45%;
 
     --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 161 93% 30%;
-    --sidebar-primary-foreground: 151 80% 95%;
-    --sidebar-accent: 0 0% 32%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 83%;
-    --sidebar-ring: 161 93% 30%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 161 93% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 222 30% 20%;
+    --sidebar-ring: 161 93% 45%;
 
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 45%) 0%, hsl(217 91% 60%) 100%);
     --gradient-success: linear-gradient(135deg, hsl(152 69% 40%) 0%, hsl(152 69% 50%) 100%);
@@ -124,12 +124,12 @@
     --ring: 158 64% 51%;
 
     --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 0 0% 98%;
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 158 64% 51%;
-    --sidebar-primary-foreground: 165 91% 9%;
-    --sidebar-accent: 172 66% 50%;
-    --sidebar-accent-foreground: 178 84% 10%;
-    --sidebar-border: 0 0% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 222 30% 16%;
     --sidebar-ring: 158 64% 51%;
 
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 65%) 0%, hsl(217 91% 75%) 100%);
