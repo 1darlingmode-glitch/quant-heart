@@ -65,11 +65,11 @@ export function ConnectMT5Dialog() {
 
   const fields = credentials
     ? [
-        { label: "Bucket", value: credentials.bucket_name },
-        { label: "Access Key", value: credentials.access_key_id },
-        { label: "Secret", value: credentials.secret_access_key },
-        { label: "Endpoint", value: credentials.endpoint_url },
-        { label: "Path", value: `/${user?.id}/` },
+        { label: "FTP Server", value: credentials.endpoint_url.replace(/^https?:\/\//, "") },
+        { label: "FTP Login", value: credentials.access_key_id },
+        { label: "FTP Password", value: credentials.secret_access_key },
+        { label: "FTP Path", value: `/${credentials.bucket_name}/${user?.id}/` },
+        { label: "FTP Mode", value: "Passive" },
       ]
     : [];
 
@@ -109,7 +109,7 @@ export function ConnectMT5Dialog() {
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              In MT5: <strong>Tools → Options → Publisher → Enable FTP</strong> → Paste credentials above
+              In MT5: <strong>Tools → Options → Publisher → Enable FTP</strong> → Copy each field above to the matching MT5 field
             </p>
           </div>
         )}
