@@ -361,6 +361,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_s3_credentials: {
+        Row: {
+          access_key_id: string
+          bucket_name: string
+          created_at: string
+          endpoint_url: string
+          id: string
+          region: string
+          secret_access_key: string
+          user_id: string
+        }
+        Insert: {
+          access_key_id: string
+          bucket_name: string
+          created_at?: string
+          endpoint_url: string
+          id?: string
+          region?: string
+          secret_access_key: string
+          user_id: string
+        }
+        Update: {
+          access_key_id?: string
+          bucket_name?: string
+          created_at?: string
+          endpoint_url?: string
+          id?: string
+          region?: string
+          secret_access_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
