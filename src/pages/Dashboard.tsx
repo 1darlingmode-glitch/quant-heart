@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ConnectMT5Dialog } from "@/components/accounts/ConnectMT5Dialog";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EquityChart } from "@/components/dashboard/EquityChart";
 import { RecentTrades } from "@/components/dashboard/RecentTrades";
@@ -67,10 +68,15 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {displayName}</h1>
-        <p className="text-muted-foreground">
-          Here's an overview of your trading performance
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {displayName}</h1>
+            <p className="text-muted-foreground">
+              Here's an overview of your trading performance
+            </p>
+          </div>
+          <ConnectMT5Dialog />
+        </div>
       </motion.div>
 
       {/* Stats Grid */}
