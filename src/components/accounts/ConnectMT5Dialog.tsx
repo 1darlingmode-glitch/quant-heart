@@ -14,11 +14,11 @@ export function ConnectMT5Dialog() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: credentials, isLoading } = useQuery({
-    queryKey: ["s3-credentials", user?.id],
+  const { data: apiKey, isLoading } = useQuery({
+    queryKey: ["api-key", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_s3_credentials" as any)
+        .from("user_api_keys" as any)
         .select("*")
         .eq("user_id", user!.id)
         .maybeSingle();
@@ -32,17 +32,16 @@ export function ConnectMT5Dialog() {
     if (!user) return;
     setGenerating(true);
     try {
-      const { error } = await supabase.from("user_s3_credentials" as any).insert({
+      // Generate a random API key
+      const key = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+      const { error } = await supabase.from("user_api_keys" as any).insert({
         user_id: user.id,
-        access_key_id: "cdd96c509ac48a80d1845ec98d38affc",
-        secret_access_key: "e4153cd409d6e9562d3856a42b12d14e3d4c2233d635981235a010a0c88e7bee",
-        bucket_name: "mt5-trade-reports",
-        endpoint_url: "https://4c38f8548f8ffdf1eb4d128f06c32893.r2.cloudflarestorage.com",
-        region: "auto",
+        api_key: key,
+        label: "MT5 Sync",
       } as any);
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ["s3-credentials", user.id] });
-      toast({ title: "Credentials generated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["api-key", user.id] });
+      toast({ title: "API key generated successfully" });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -63,13 +62,12 @@ export function ConnectMT5Dialog() {
     </Button>
   );
 
-  const fields = credentials
+  const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mt5-sync`;
+
+  const fields = apiKey
     ? [
-        { label: "FTP Server", value: credentials.endpoint_url.replace(/^https?:\/\//, "") },
-        { label: "FTP Login", value: credentials.access_key_id },
-        { label: "FTP Password", value: credentials.secret_access_key },
-        { label: "FTP Path", value: `/${credentials.bucket_name}/${user?.id}/` },
-        { label: "FTP Mode", value: "Passive" },
+        { label: "API Endpoint", value: endpoint },
+        { label: "API Key", value: apiKey.api_key },
       ]
     : [];
 
@@ -81,18 +79,20 @@ export function ConnectMT5Dialog() {
           Connect MT5
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>MT5 Sync</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : !credentials ? (
+        ) : !apiKey ? (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Generate credentials to sync your MT5 trades automatically.</p>
+            <p className="text-sm text-muted-foreground">
+              Generate an API key to sync your MT5 trades using an Expert Advisor (EA).
+            </p>
             <Button onClick={handleGenerate} disabled={generating} className="w-full gradient-primary shadow-glow">
-              {generating ? "Generating..." : "Generate Credentials"}
+              {generating ? "Generating..." : "Generate API Key"}
             </Button>
           </div>
         ) : (
@@ -108,9 +108,81 @@ export function ConnectMT5Dialog() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">
-              In MT5: <strong>Tools → Options → Publisher → Enable FTP</strong> → Copy each field above to the matching MT5 field
-            </p>
+            <div className="bg-muted/50 border border-border rounded-lg p-3 space-y-2">
+              <p className="text-xs font-medium">EA Setup Instructions:</p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Copy the EA script below into your MT5 Experts folder</li>
+                <li>Paste your <strong>API Endpoint</strong> and <strong>API Key</strong> into the EA inputs</li>
+                <li>Attach the EA to any chart — it will sync all closed trades automatically</li>
+              </ol>
+            </div>
+            <details className="text-xs">
+              <summary className="cursor-pointer text-primary font-medium">View MT5 Expert Advisor Code</summary>
+              <pre className="mt-2 bg-muted/50 border border-border rounded-lg p-3 overflow-x-auto text-[11px] leading-relaxed whitespace-pre">
+{`//+------------------------------------------------------------------+
+//| PipTrace_Sync.mq5                                                |
+//+------------------------------------------------------------------+
+input string ApiEndpoint = "";  // Paste API Endpoint here
+input string ApiKey = "";       // Paste API Key here
+input int    SyncIntervalSec = 60;
+
+datetime lastSync = 0;
+
+int OnInit() {
+   EventSetTimer(SyncIntervalSec);
+   Print("PipTrace Sync EA initialized");
+   return INIT_SUCCEEDED;
+}
+
+void OnTimer() { SyncTrades(); }
+
+void SyncTrades() {
+   HistorySelect(lastSync, TimeCurrent());
+   int total = HistoryDealsTotal();
+   if(total == 0) return;
+
+   string json = "[";
+   int count = 0;
+   for(int i = 0; i < total; i++) {
+      ulong ticket = HistoryDealGetTicket(i);
+      if(HistoryDealGetInteger(ticket, DEAL_ENTRY) != DEAL_ENTRY_OUT) continue;
+      
+      if(count > 0) json += ",";
+      json += "{";
+      json += "\\"symbol\\":\\"" + HistoryDealGetString(ticket, DEAL_SYMBOL) + "\\",";
+      json += "\\"type\\":" + IntegerToString((int)HistoryDealGetInteger(ticket, DEAL_TYPE)) + ",";
+      json += "\\"volume\\":" + DoubleToString(HistoryDealGetDouble(ticket, DEAL_VOLUME), 2) + ",";
+      json += "\\"entry_price\\":" + DoubleToString(HistoryDealGetDouble(ticket, DEAL_PRICE), 5) + ",";
+      json += "\\"exit_price\\":" + DoubleToString(HistoryDealGetDouble(ticket, DEAL_PRICE), 5) + ",";
+      json += "\\"profit\\":" + DoubleToString(HistoryDealGetDouble(ticket, DEAL_PROFIT), 2) + ",";
+      json += "\\"open_time\\":\\"" + TimeToString(HistoryDealGetInteger(ticket, DEAL_TIME), TIME_DATE|TIME_SECONDS) + "\\",";
+      json += "\\"close_time\\":\\"" + TimeToString(HistoryDealGetInteger(ticket, DEAL_TIME), TIME_DATE|TIME_SECONDS) + "\\",";
+      json += "\\"magic\\":" + IntegerToString((int)HistoryDealGetInteger(ticket, DEAL_MAGIC)) + ",";
+      json += "\\"comment\\":\\"" + HistoryDealGetString(ticket, DEAL_COMMENT) + "\\"";
+      json += "}";
+      count++;
+   }
+   json += "]";
+
+   if(count == 0) return;
+
+   string headers = "Content-Type: application/json\\r\\nx-api-key: " + ApiKey;
+   char post[], result[];
+   string resultHeaders;
+   StringToCharArray(json, post, 0, WHOLE_ARRAY, CP_UTF8);
+
+   int res = WebRequest("POST", ApiEndpoint, headers, 5000, post, result, resultHeaders);
+   if(res == 200) {
+      Print("PipTrace: Synced ", count, " trades");
+      lastSync = TimeCurrent();
+   } else {
+      Print("PipTrace: Sync failed, code=", res);
+   }
+}
+
+void OnDeinit(const int reason) { EventKillTimer(); }`}
+              </pre>
+            </details>
           </div>
         )}
       </DialogContent>
